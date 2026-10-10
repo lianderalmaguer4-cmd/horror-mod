@@ -1,0 +1,1 @@
+{ "parent": "minecraft:item/generated", "textures": { "layer0": "rostroshuecos:item/chica_rota_spawn_egg" } }

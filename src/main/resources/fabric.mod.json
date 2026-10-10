@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "rostroshuecos",
+  "version": "${version}",
+  "name": "Rostros Huecos",
+  "description": "Mod de terror: animatronicos rotos, un nino gris, sombras que te vigilan, notas con lore y sustos.",
+  "authors": ["Tu"],
+  "license": "All-Rights-Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["com.rostroshuecos.RostrosHuecos"],
+    "client": ["com.rostroshuecos.client.RostrosHuecosClient"]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.9",
+    "minecraft": "~1.21.4",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

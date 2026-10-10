@@ -1,0 +1,1 @@
+{ "parent": "minecraft:item/generated", "textures": { "layer0": "rostroshuecos:item/sombra_hueca_spawn_egg" } }

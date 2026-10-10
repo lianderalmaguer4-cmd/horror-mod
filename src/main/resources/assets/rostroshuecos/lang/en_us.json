@@ -1,0 +1,12 @@
+{
+  "itemGroup.rostroshuecos": "Hollow Faces",
+  "item.rostroshuecos.nota_rota": "Torn Note",
+  "item.rostroshuecos.chica_rota_spawn_egg": "Broken Chick Spawn Egg",
+  "item.rostroshuecos.nino_gris_spawn_egg": "Grey Child Spawn Egg",
+  "item.rostroshuecos.sombra_hueca_spawn_egg": "Hollow Shadow Spawn Egg",
+  "item.rostroshuecos.muneco_perdido_spawn_egg": "Lost Doll Spawn Egg",
+  "entity.rostroshuecos.chica_rota": "Broken Chick",
+  "entity.rostroshuecos.nino_gris": "Grey Child",
+  "entity.rostroshuecos.sombra_hueca": "Hollow Shadow",
+  "entity.rostroshuecos.muneco_perdido": "Lost Doll"
+}

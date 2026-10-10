@@ -1,0 +1,12 @@
+{
+  "itemGroup.rostroshuecos": "Rostros Huecos",
+  "item.rostroshuecos.nota_rota": "Nota Rota",
+  "item.rostroshuecos.chica_rota_spawn_egg": "Huevo generador de Pollita Rota",
+  "item.rostroshuecos.nino_gris_spawn_egg": "Huevo generador de Niño Gris",
+  "item.rostroshuecos.sombra_hueca_spawn_egg": "Huevo generador de Sombra Hueca",
+  "item.rostroshuecos.muneco_perdido_spawn_egg": "Huevo generador de Muñeco Perdido",
+  "entity.rostroshuecos.chica_rota": "Pollita Rota",
+  "entity.rostroshuecos.nino_gris": "Niño Gris",
+  "entity.rostroshuecos.sombra_hueca": "Sombra Hueca",
+  "entity.rostroshuecos.muneco_perdido": "Muñeco Perdido"
+}

@@ -1,25 +1,15 @@
 # Rostros Huecos — mod de terror (Fabric 1.21.4)
 
-## Contenido
-- Pollita Rota (agresiva): se congela si la miras; susto al alcanzarte.
-- Sombra Hueca (neutral): solo te ataca si la miras o la golpeas; da Oscuridad.
-- Niño Gris (pacífico): clic derecho = lore + Nota Rota, y desaparece.
-- Muñeco Perdido (pacífico): te sigue a distancia.
-- Nota Rota: clic derecho = fragmento de lore (a veces, susto).
-- Eventos ambientales a oscuras: sonidos a tu espalda y sustos glitch.
-- Pestaña creativa "Rostros Huecos" con huevos generadores.
+Monstruos (imagenes planas que giran hacia ti, inmortales, solo uno de cada tipo a la vez):
+- Sombra Hueca (neutral): solo te ataca si la miras o la golpeas; da Oscuridad. Si llama a tu puerta, te deja una Nota Rota.
+- La Raiz (agresiva, lenta, bosques): te ENREDA con raices (lentitud extrema) a menos de 7 bloques.
+- El Sudario (agresivo): APAGA la luz: rompe antorchas/linternas cercanas y da Oscuridad.
+- El Hueco (agresivo, VUELA): busto flotante; si lo miras te provoca Nausea.
+- Mandibula Caida (agresiva): SUCCIONA, te arrastra hacia ella y te ralentiza.
+- Doble Boca (agresiva): se congela si la miras, corre si no; repite en el chat lo que escribes.
 
-## Compilar sin instalar nada (GitHub)
-1. Crea un repositorio en github.com y sube TODO el contenido de esta carpeta.
-2. Pestaña Actions -> "Compilar mod" -> Run workflow (se ejecuta solo al subir).
-3. Cuando termine, abre la ejecución y descarga el artefacto "RostrosHuecos-jar".
-4. Usa el .jar `rostros-huecos-1.0.0.jar` (NO el `-sources`) en la carpeta mods.
+Eventos: golpes en la puerta (quien llama espera afuera), rostros en ventanas, figuras tras arboles y en cuevas,
+pasos, caja de musica, susurros en el chat, gritos lejanos, apagones, puertas que se abren solas, cacerias,
+esconderse (Shift junto a una cama). Comandos de prueba: /rostros evento, /rostros susto.
 
-## Compilar en tu PC
-Java 21 + Gradle 8.11: `gradle build` -> `build/libs/rostros-huecos-1.0.0.jar`
-(o abre la carpeta en IntelliJ IDEA y ejecuta la tarea build).
-
-## Personalizar
-- Imagen del susto: textures/gui/jumpscare.png (si cambias el tamaño, edita IMG_W/IMG_H en JumpscareClient.java).
-- Lore: Lore.java. Texturas de entidades: textures/entity/*.png (64x64, formato skin).
-- Si las versiones fallan, actualiza gradle.properties con las de https://fabricmc.net/develop
+Compilar sin instalar nada: sube el contenido a GitHub y deja que Actions compile (ver .github/workflows/build.yml).

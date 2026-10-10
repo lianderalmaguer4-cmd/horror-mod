@@ -12,14 +12,18 @@ public class RostrosHuecosClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         // nombre de la imagen, alto en bloques, proporcion ancho/alto de la imagen
-        EntityRendererRegistry.register(ModEntities.CHICA_ROTA,
-                ctx -> new SpriteEntityRenderer<>(ctx, "chica_rota", 2.3F, 0.625F));
         EntityRendererRegistry.register(ModEntities.SOMBRA_HUECA,
                 ctx -> new SpriteEntityRenderer<>(ctx, "sombra_hueca", 3.0F, 0.266F));
-        EntityRendererRegistry.register(ModEntities.NINO_GRIS,
-                ctx -> new SpriteEntityRenderer<>(ctx, "nino_gris", 1.5F, 0.35F));
-        EntityRendererRegistry.register(ModEntities.MUNECO_PERDIDO,
-                ctx -> new SpriteEntityRenderer<>(ctx, "muneco_perdido", 1.1F, 0.473F));
+        EntityRendererRegistry.register(ModEntities.RAIZ,
+                ctx -> new SpriteEntityRenderer<>(ctx, "raiz", 2.7F, 0.756F));
+        EntityRendererRegistry.register(ModEntities.SUDARIO,
+                ctx -> new SpriteEntityRenderer<>(ctx, "sudario", 2.9F, 0.305F));
+        EntityRendererRegistry.register(ModEntities.HUECO,
+                ctx -> new SpriteEntityRenderer<>(ctx, "hueco", 1.7F, 0.75F));
+        EntityRendererRegistry.register(ModEntities.MANDIBULA,
+                ctx -> new SpriteEntityRenderer<>(ctx, "mandibula", 2.3F, 0.334F));
+        EntityRendererRegistry.register(ModEntities.DOBLE_BOCA,
+                ctx -> new SpriteEntityRenderer<>(ctx, "doble_boca", 2.1F, 0.451F));
 
         ClientPlayNetworking.registerGlobalReceiver(JumpscarePayload.ID,
                 (payload, context) -> JumpscareClient.trigger(payload.type(), payload.mob()));

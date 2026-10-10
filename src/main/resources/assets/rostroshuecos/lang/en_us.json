@@ -1,12 +1,16 @@
 {
   "itemGroup.rostroshuecos": "Hollow Faces",
   "item.rostroshuecos.nota_rota": "Torn Note",
-  "item.rostroshuecos.chica_rota_spawn_egg": "Broken Chick Spawn Egg",
-  "item.rostroshuecos.nino_gris_spawn_egg": "Grey Child Spawn Egg",
   "item.rostroshuecos.sombra_hueca_spawn_egg": "Hollow Shadow Spawn Egg",
-  "item.rostroshuecos.muneco_perdido_spawn_egg": "Lost Doll Spawn Egg",
-  "entity.rostroshuecos.chica_rota": "Broken Chick",
-  "entity.rostroshuecos.nino_gris": "Grey Child",
+  "item.rostroshuecos.raiz_spawn_egg": "The Root Spawn Egg",
+  "item.rostroshuecos.sudario_spawn_egg": "The Shroud Spawn Egg",
+  "item.rostroshuecos.hueco_spawn_egg": "The Hollow Spawn Egg",
+  "item.rostroshuecos.mandibula_spawn_egg": "Fallen Jaw Spawn Egg",
+  "item.rostroshuecos.doble_boca_spawn_egg": "Double Mouth Spawn Egg",
   "entity.rostroshuecos.sombra_hueca": "Hollow Shadow",
-  "entity.rostroshuecos.muneco_perdido": "Lost Doll"
+  "entity.rostroshuecos.raiz": "The Root",
+  "entity.rostroshuecos.sudario": "The Shroud",
+  "entity.rostroshuecos.hueco": "The Hollow",
+  "entity.rostroshuecos.mandibula": "Fallen Jaw",
+  "entity.rostroshuecos.doble_boca": "Double Mouth"
 }

@@ -1,0 +1,1 @@
+{ "parent": "minecraft:item/generated", "textures": { "layer0": "rostroshuecos:item/doble_boca_spawn_egg" } }

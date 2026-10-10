@@ -15,14 +15,14 @@ public final class JumpscareClient {
 
     private record Img(Identifier normal, Identifier glitch, int w, int h) {}
 
-    // 0 Pollita, 1 Sombra, 2 Niño, 3 Muñeco (910x590) y, al final, la imagen original que subiste (455x295)
-    private static final Img[] IMGS = {
-        new Img(RostrosHuecos.id("textures/gui/jumpscare_0.png"), RostrosHuecos.id("textures/gui/jumpscare_0_glitch.png"), 910, 590),
-        new Img(RostrosHuecos.id("textures/gui/jumpscare_1.png"), RostrosHuecos.id("textures/gui/jumpscare_1_glitch.png"), 910, 590),
-        new Img(RostrosHuecos.id("textures/gui/jumpscare_2.png"), RostrosHuecos.id("textures/gui/jumpscare_2_glitch.png"), 910, 590),
-        new Img(RostrosHuecos.id("textures/gui/jumpscare_3.png"), RostrosHuecos.id("textures/gui/jumpscare_3_glitch.png"), 910, 590),
-        new Img(RostrosHuecos.id("textures/gui/jumpscare.png"), RostrosHuecos.id("textures/gui/jumpscare_glitch.png"), 455, 295)
-    };
+    // 0 Sombra, 1 Raiz, 2 Sudario, 3 Hueco, 4 Mandibula, 5 Doble Boca (todas 910x590)
+    private static final Img[] IMGS = new Img[6];
+    static {
+        for (int i = 0; i < IMGS.length; i++) {
+            IMGS[i] = new Img(RostrosHuecos.id("textures/gui/jumpscare_" + i + ".png"),
+                              RostrosHuecos.id("textures/gui/jumpscare_" + i + "_glitch.png"), 910, 590);
+        }
+    }
 
     private static final Random RNG = Random.create();
     private static int ticks = 0;
@@ -30,12 +30,12 @@ public final class JumpscareClient {
     private static int type = 0;
     private static Img current = IMGS[0];
 
-    /** type: 0 = fuerte, 1 = glitch. mob: 0-3 = cara de ese monstruo, otro = al azar. */
+    /** type: 0 = fuerte, 1 = glitch. mob: 0-5 = cara de ese monstruo, otro = al azar. */
     public static void trigger(int t, int mob) {
         MinecraftClient mc = MinecraftClient.getInstance();
         type = t;
         total = ticks = (t == 0) ? 45 : 28;
-        current = (mob >= 0 && mob < 4) ? IMGS[mob] : IMGS[RNG.nextInt(IMGS.length)];
+        current = (mob >= 0 && mob < IMGS.length) ? IMGS[mob] : IMGS[RNG.nextInt(IMGS.length)];
         if (t == 0) {
             mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_GHAST_SCREAM, 0.5F, 1.0F));
             mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_WARDEN_SONIC_BOOM, 0.6F, 1.0F));

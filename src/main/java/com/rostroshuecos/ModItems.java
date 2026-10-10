@@ -2,6 +2,8 @@ package com.rostroshuecos;
 
 import java.util.function.Function;
 import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemGroup;
 import net.minecraft.item.ItemStack;
@@ -16,14 +18,16 @@ public final class ModItems {
     private ModItems() {}
 
     public static final Item NOTA_ROTA = item("nota_rota", NotaRotaItem::new, new Item.Settings().maxCount(16));
-    public static final Item CHICA_ROTA_EGG = item("chica_rota_spawn_egg",
-            s -> new SpawnEggItem(ModEntities.CHICA_ROTA, s), new Item.Settings());
-    public static final Item NINO_GRIS_EGG = item("nino_gris_spawn_egg",
-            s -> new SpawnEggItem(ModEntities.NINO_GRIS, s), new Item.Settings());
-    public static final Item SOMBRA_HUECA_EGG = item("sombra_hueca_spawn_egg",
-            s -> new SpawnEggItem(ModEntities.SOMBRA_HUECA, s), new Item.Settings());
-    public static final Item MUNECO_PERDIDO_EGG = item("muneco_perdido_spawn_egg",
-            s -> new SpawnEggItem(ModEntities.MUNECO_PERDIDO, s), new Item.Settings());
+    public static final Item SOMBRA_HUECA_EGG = egg("sombra_hueca_spawn_egg", ModEntities.SOMBRA_HUECA);
+    public static final Item RAIZ_EGG = egg("raiz_spawn_egg", ModEntities.RAIZ);
+    public static final Item SUDARIO_EGG = egg("sudario_spawn_egg", ModEntities.SUDARIO);
+    public static final Item HUECO_EGG = egg("hueco_spawn_egg", ModEntities.HUECO);
+    public static final Item MANDIBULA_EGG = egg("mandibula_spawn_egg", ModEntities.MANDIBULA);
+    public static final Item DOBLE_BOCA_EGG = egg("doble_boca_spawn_egg", ModEntities.DOBLE_BOCA);
+
+    private static Item egg(String name, EntityType<? extends MobEntity> type) {
+        return item(name, s -> new SpawnEggItem(type, s), new Item.Settings());
+    }
 
     private static Item item(String name, Function<Item.Settings, Item> factory, Item.Settings settings) {
         RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, RostrosHuecos.id(name));
@@ -36,10 +40,12 @@ public final class ModItems {
                 .displayName(Text.translatable("itemGroup.rostroshuecos"))
                 .entries((ctx, entries) -> {
                     entries.add(NOTA_ROTA);
-                    entries.add(CHICA_ROTA_EGG);
-                    entries.add(NINO_GRIS_EGG);
                     entries.add(SOMBRA_HUECA_EGG);
-                    entries.add(MUNECO_PERDIDO_EGG);
+                    entries.add(RAIZ_EGG);
+                    entries.add(SUDARIO_EGG);
+                    entries.add(HUECO_EGG);
+                    entries.add(MANDIBULA_EGG);
+                    entries.add(DOBLE_BOCA_EGG);
                 })
                 .build();
         Registry.register(Registries.ITEM_GROUP, RegistryKey.of(RegistryKeys.ITEM_GROUP, RostrosHuecos.id("main")), group);

@@ -7,7 +7,7 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.math.Vec3d;
 
-/** Eventos ambientales: sonidos a tu espalda y sustos raros cuando estas a oscuras. */
+/** Sonidos ambientales de terror: a tu espalda, en cualquier direccion, y sustos raros a oscuras. */
 public final class HorrorEvents {
     private HorrorEvents() {}
 
@@ -15,27 +15,49 @@ public final class HorrorEvents {
         SoundEvents.ENTITY_WARDEN_NEARBY_CLOSE,
         SoundEvents.ENTITY_WARDEN_HEARTBEAT,
         SoundEvents.BLOCK_WOODEN_DOOR_OPEN,
+        SoundEvents.BLOCK_WOODEN_DOOR_CLOSE,
+        SoundEvents.BLOCK_IRON_DOOR_CLOSE,
+        SoundEvents.BLOCK_CHEST_CLOSE,
+        SoundEvents.BLOCK_WOODEN_TRAPDOOR_CLOSE,
         SoundEvents.ENTITY_ENDERMAN_STARE,
+        SoundEvents.ENTITY_ENDERMAN_AMBIENT,
         SoundEvents.ENTITY_GHAST_AMBIENT,
-        SoundEvents.ENTITY_ZOMBIE_VILLAGER_AMBIENT
+        SoundEvents.ENTITY_ZOMBIE_VILLAGER_AMBIENT,
+        SoundEvents.ENTITY_PHANTOM_AMBIENT,
+        SoundEvents.ENTITY_WITCH_AMBIENT,
+        SoundEvents.ENTITY_VEX_AMBIENT,
+        SoundEvents.ENTITY_CAT_HISS,
+        SoundEvents.ENTITY_WOLF_GROWL,
+        SoundEvents.BLOCK_BELL_USE
     };
 
     public static void register() {
         ServerTickEvents.END_WORLD_TICK.register(world -> {
             if (world.getTime() % 20 != 0) return;
+            long t = world.getTimeOfDay() % 24000L;
+            boolean night = t >= 13000 && t <= 23000;
             for (ServerPlayerEntity p : world.getPlayers()) {
-                if (p.isCreative() || p.isSpectator()) continue;
+                if (p.isSpectator()) continue;
                 boolean dark = world.getLightLevel(p.getBlockPos()) <= 4;
-                if (!dark) continue;
-                // ~ cada 90 s a oscuras: un sonido detras de ti
-                if (world.getRandom().nextInt(90) == 0) {
-                    Vec3d pos = p.getRotationVec(1.0F).multiply(-6.0).add(p.getPos());
+                boolean nightOutside = night && world.isSkyVisible(p.getBlockPos());
+                int den = dark ? 45 : (nightOutside ? 70 : 0);
+                if (den == 0) continue;
+
+                // sonido raro: a tu espalda (60%) o en una direccion cualquiera
+                if (world.getRandom().nextInt(den) == 0) {
+                    Vec3d pos;
+                    if (world.getRandom().nextInt(10) < 6) {
+                        pos = p.getRotationVec(1.0F).multiply(-6.0).add(p.getPos());
+                    } else {
+                        double ang = world.getRandom().nextDouble() * Math.PI * 2;
+                        pos = p.getPos().add(Math.cos(ang) * 10, 0, Math.sin(ang) * 10);
+                    }
                     SoundEvent s = CREEPS[world.getRandom().nextInt(CREEPS.length)];
                     world.playSound(null, pos.x, pos.y, pos.z, s, SoundCategory.AMBIENT,
-                            1.2F, 0.6F + world.getRandom().nextFloat() * 0.4F);
+                            1.3F, 0.5F + world.getRandom().nextFloat() * 0.5F);
                 }
-                // ~ cada 15 min a oscuras: susto glitch
-                if (world.getRandom().nextInt(900) == 0) {
+                // susto glitch muy raro a oscuras (~25 min); solo caras agresivas
+                if (dark && world.getRandom().nextInt(1500) == 0) {
                     Jumpscare.send(p, 1);
                 }
             }

@@ -17,5 +17,6 @@ public class RostrosHuecos implements ModInitializer {
         ModEntities.register();
         ModItems.register();
         HorrorEvents.register();
+        StalkerDirector.register();
     }
 }

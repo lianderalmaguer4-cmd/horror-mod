@@ -51,6 +51,7 @@ public class ChicaRotaEntity extends HostileEntity {
     @Override
     public void tick() {
         super.tick();
+        if (HorrorUtil.isSpy(this)) return;
         if (this.getWorld().isClient) return;
 
         if (scareCooldown > 0) scareCooldown--;
@@ -66,7 +67,7 @@ public class ChicaRotaEntity extends HostileEntity {
         // Susto cuando llega cerca de su objetivo
         LivingEntity target = this.getTarget();
         if (target instanceof ServerPlayerEntity sp && scareCooldown == 0 && this.squaredDistanceTo(sp) < 6.25) {
-            Jumpscare.send(sp, 0);
+            Jumpscare.send(sp, 0, 0);
             scareCooldown = 600;
         }
     }

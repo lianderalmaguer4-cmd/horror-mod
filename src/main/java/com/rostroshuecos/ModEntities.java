@@ -28,13 +28,13 @@ public final class ModEntities {
     private ModEntities() {}
 
     public static final EntityType<ChicaRotaEntity> CHICA_ROTA = reg("chica_rota",
-            EntityType.Builder.create(ChicaRotaEntity::new, SpawnGroup.MONSTER).dimensions(0.7F, 2.1F).maxTrackingRange(10));
+            EntityType.Builder.create(ChicaRotaEntity::new, SpawnGroup.MONSTER).dimensions(0.8F, 2.2F).maxTrackingRange(10));
     public static final EntityType<SombraHuecaEntity> SOMBRA_HUECA = reg("sombra_hueca",
-            EntityType.Builder.create(SombraHuecaEntity::new, SpawnGroup.MONSTER).dimensions(0.6F, 2.4F).maxTrackingRange(10));
+            EntityType.Builder.create(SombraHuecaEntity::new, SpawnGroup.MONSTER).dimensions(0.6F, 2.9F).maxTrackingRange(10));
     public static final EntityType<NinoGrisEntity> NINO_GRIS = reg("nino_gris",
-            EntityType.Builder.create(NinoGrisEntity::new, SpawnGroup.MONSTER).dimensions(0.5F, 1.4F).maxTrackingRange(10));
+            EntityType.Builder.create(NinoGrisEntity::new, SpawnGroup.MONSTER).dimensions(0.5F, 1.5F).maxTrackingRange(10));
     public static final EntityType<MunecoPerdidoEntity> MUNECO_PERDIDO = reg("muneco_perdido",
-            EntityType.Builder.create(MunecoPerdidoEntity::new, SpawnGroup.MONSTER).dimensions(0.4F, 1.0F).maxTrackingRange(10));
+            EntityType.Builder.create(MunecoPerdidoEntity::new, SpawnGroup.MONSTER).dimensions(0.5F, 1.1F).maxTrackingRange(10));
 
     private static <T extends Entity> EntityType<T> reg(String name, EntityType.Builder<T> builder) {
         RegistryKey<EntityType<?>> key = RegistryKey.of(RegistryKeys.ENTITY_TYPE, RostrosHuecos.id(name));

@@ -11,17 +11,18 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 public class RostrosHuecosClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
+        // nombre de la imagen, alto en bloques, proporcion ancho/alto de la imagen
         EntityRendererRegistry.register(ModEntities.CHICA_ROTA,
-                ctx -> new HorrorBipedRenderer<>(ctx, "chica_rota", 1.15F, 0.6F));
+                ctx -> new SpriteEntityRenderer<>(ctx, "chica_rota", 2.3F, 0.625F));
         EntityRendererRegistry.register(ModEntities.SOMBRA_HUECA,
-                ctx -> new HorrorBipedRenderer<>(ctx, "sombra_hueca", 1.2F, 0.4F));
+                ctx -> new SpriteEntityRenderer<>(ctx, "sombra_hueca", 3.0F, 0.266F));
         EntityRendererRegistry.register(ModEntities.NINO_GRIS,
-                ctx -> new HorrorBipedRenderer<>(ctx, "nino_gris", 0.75F, 0.3F));
+                ctx -> new SpriteEntityRenderer<>(ctx, "nino_gris", 1.5F, 0.35F));
         EntityRendererRegistry.register(ModEntities.MUNECO_PERDIDO,
-                ctx -> new HorrorBipedRenderer<>(ctx, "muneco_perdido", 0.55F, 0.25F));
+                ctx -> new SpriteEntityRenderer<>(ctx, "muneco_perdido", 1.1F, 0.473F));
 
         ClientPlayNetworking.registerGlobalReceiver(JumpscarePayload.ID,
-                (payload, context) -> JumpscareClient.trigger(payload.type()));
+                (payload, context) -> JumpscareClient.trigger(payload.type(), payload.mob()));
         ClientTickEvents.END_CLIENT_TICK.register(client -> JumpscareClient.tick());
         HudRenderCallback.EVENT.register(JumpscareClient::render);
     }

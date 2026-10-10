@@ -50,6 +50,7 @@ public class SombraHuecaEntity extends HostileEntity {
     @Override
     public void tick() {
         super.tick();
+        if (HorrorUtil.isSpy(this)) return;
         if (this.getWorld().isClient) return;
         if (scareCooldown > 0) scareCooldown--;
 
@@ -59,7 +60,7 @@ public class SombraHuecaEntity extends HostileEntity {
                 this.setTarget(p);
                 this.playSound(SoundEvents.ENTITY_ENDERMAN_STARE, 1.5F, 0.5F);
                 if (p instanceof ServerPlayerEntity sp && scareCooldown == 0) {
-                    Jumpscare.send(sp, 1);
+                    Jumpscare.send(sp, 1, 1);
                     scareCooldown = 1200;
                 }
             }

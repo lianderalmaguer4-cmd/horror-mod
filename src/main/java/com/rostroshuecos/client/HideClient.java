@@ -30,8 +30,8 @@ public final class HideClient {
         if (!hidden) return;
         int w = ctx.getScaledWindowWidth();
         int h = ctx.getScaledWindowHeight();
-        int top = (int) (h * 0.46);
-        int bottom = (int) (h * 0.58);
+        int top = (int) (h * 0.40);
+        int bottom = (int) (h * 0.62);
         ctx.fill(0, 0, w, top, 0xFF000000);
         ctx.fill(0, bottom, w, h, 0xFF000000);
         // los lados de la rendija tambien se oscurecen

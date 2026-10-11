@@ -16,3 +16,7 @@ Ruinas de San Mudo (Pozo Sellado, Casa, Arbol del Vecino) aparecen al explorar; 
 Comandos: /rostros diario | (trucos) /rostros evento, susto, estructura, estructuras.
 
 Compilar sin instalar nada: sube el contenido a GitHub y deja que Actions compile (.github/workflows/build.yml).
+
+v8: la camara baja bajo la cama al esconderte (atributo de escala), 10 s escondido = los monstruos desaparecen;
+rara vez un monstruo sale de debajo de la cama mientras duermes (levantate a tiempo o mueres);
+a veces el monstruo rompe la ventana o abre la puerta para entrar; sonidos rehechos con estilo "analog horror".

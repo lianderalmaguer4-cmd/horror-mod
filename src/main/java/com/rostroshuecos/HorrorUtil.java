@@ -19,6 +19,7 @@ public final class HorrorUtil {
     public static final String TAG_ESPIA = "espia";
     public static final String TAG_ESPIA_CAMA = "espia_cama";
     public static final String TAG_PUERTA = "visita_puerta";
+    public static final String TAG_VENTANA = "visita_ventana";
 
     /** Mismo calculo que el Enderman: true si el jugador mira directamente a la entidad. */
     public static boolean isLookingAt(PlayerEntity p, Entity e) {
@@ -33,7 +34,8 @@ public final class HorrorUtil {
     public static boolean isSpy(Entity e) {
         return e.getCommandTags().contains(TAG_ESPIA)
                 || e.getCommandTags().contains(TAG_ESPIA_CAMA)
-                || e.getCommandTags().contains(TAG_PUERTA);
+                || e.getCommandTags().contains(TAG_PUERTA)
+                || e.getCommandTags().contains(TAG_VENTANA);
     }
 
     /** Los 5 monstruos agresivos. La Sombra Hueca es neutral (no ataca a menos que la mires). */

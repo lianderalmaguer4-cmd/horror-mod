@@ -11,6 +11,9 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -31,9 +34,12 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
 import net.minecraft.util.Formatting;
+import net.minecraft.util.Hand;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.Difficulty;
@@ -63,6 +69,8 @@ public final class StalkerDirector {
     private static final Map<UUID, Integer> HIDE_TICKS = new HashMap<>();
     private static final Map<UUID, Integer> LOOKED = new HashMap<>();
     private static final Map<UUID, BlockPos> DOOR_OF = new HashMap<>();
+    private static final Map<UUID, BlockPos> HIDDEN = new HashMap<>();      // jugador escondido -> su cama
+    private static final Map<UUID, Double> WINDOW_Y = new HashMap<>();       // visitante de ventana -> altura final
 
     private static final SoundEvent[] DISTANT = {
         SoundEvents.ENTITY_GHAST_SCREAM, SoundEvents.ENTITY_ENDERMAN_SCREAM,
@@ -104,11 +112,44 @@ public final class StalkerDirector {
             });
         });
 
-        // Comandos de prueba (necesitan trucos): /rostros evento  y  /rostros susto
+        // Al entrar: el diario inicial (una sola vez) y se limpia cualquier escondite viejo
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            ServerPlayerEntity pl = handler.getPlayer();
+            HIDDEN.remove(pl.getUuid());
+            ServerPlayNetworking.send(pl, new HidePayload(false));
+            Diary.giveIfNeeded(pl);
+        });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> HIDDEN.remove(handler.getPlayer().getUuid()));
+
+        // Esconderse: Shift + clic derecho en una cama (bajo techo). Clic derecho de nuevo para salir.
+        UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
+            if (world.isClient || hand != Hand.MAIN_HAND || !(player instanceof ServerPlayerEntity sp)) {
+                return ActionResult.PASS;
+            }
+            BlockPos pos = hit.getBlockPos();
+            if (!world.getBlockState(pos).isIn(BlockTags.BEDS)) return ActionResult.PASS;
+            if (HIDDEN.containsKey(sp.getUuid())) {
+                unhide(sp);
+                return ActionResult.SUCCESS;
+            }
+            if (!sp.isSneaking()) return ActionResult.PASS;   // sin Shift: dormir como siempre
+            ServerWorld sw = sp.getServerWorld();
+            if (sw.isSkyVisible(pos.up())) {
+                sp.sendMessage(Text.literal("Necesitas un techo sobre la cama para esconderte."), true);
+                return ActionResult.SUCCESS;
+            }
+            hide(sw, sp, pos.toImmutable());
+            return ActionResult.SUCCESS;
+        });
+
+        // Comandos: /rostros diario (todos), el resto necesita trucos
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
             dispatcher.register(CommandManager.literal("rostros")
-                .requires(src -> src.hasPermissionLevel(2))
-                .then(CommandManager.literal("evento").executes(ctx -> {
+                .then(CommandManager.literal("diario").executes(ctx -> {
+                    ctx.getSource().getPlayerOrThrow().giveItemStack(new ItemStack(ModItems.DIARIO));
+                    return 1;
+                }))
+                .then(CommandManager.literal("evento").requires(src -> src.hasPermissionLevel(2)).executes(ctx -> {
                     ServerPlayerEntity pl = ctx.getSource().getPlayerOrThrow();
                     boolean ok = triggerEvent(pl.getServerWorld(), pl, true);
                     ctx.getSource().sendFeedback(() -> Text.literal(ok
@@ -116,9 +157,23 @@ public final class StalkerDirector {
                             : "No se pudo lanzar un evento aquí (quizá ya existen esas entidades); prueba otra vez o muévete."), false);
                     return ok ? 1 : 0;
                 }))
-                .then(CommandManager.literal("susto").executes(ctx -> {
-                    Jumpscare.send(ctx.getSource().getPlayerOrThrow(), 0, 0);
+                .then(CommandManager.literal("susto").requires(src -> src.hasPermissionLevel(2)).executes(ctx -> {
+                    Jumpscare.send(ctx.getSource().getPlayerOrThrow(), 0);
                     return 1;
+                }))
+                .then(CommandManager.literal("estructura").requires(src -> src.hasPermissionLevel(2)).executes(ctx -> {
+                    ServerPlayerEntity pl = ctx.getSource().getPlayerOrThrow();
+                    ServerWorld sw = pl.getServerWorld();
+                    boolean ok = StructureManager.forcePlace(sw, pl, sw.getRandom().nextInt(3));
+                    ctx.getSource().sendFeedback(() -> Text.literal(ok
+                            ? "Ruina creada delante de ti."
+                            : "No se pudo crear aquí (terreno sin cargar o con agua)."), false);
+                    return ok ? 1 : 0;
+                }))
+                .then(CommandManager.literal("estructuras").requires(src -> src.hasPermissionLevel(2)).executes(ctx -> {
+                    List<String> l = StructureManager.describe();
+                    ctx.getSource().sendFeedback(() -> Text.literal(l.isEmpty() ? "Aún no hay ruinas." : String.join("\n", l)), false);
+                    return l.size();
                 }))));
     }
 
@@ -132,6 +187,8 @@ public final class StalkerDirector {
 
             if (time % 2 == 0) handleSpies(w, p);
             if (time % 10 == 0) handleHiding(w, p);
+
+            if (time % 200 == 0) StructureManager.tick(w, p);
 
             if (time % 100 == 0) {
                 Integer next = NEXT_EVENT.get(id);
@@ -156,7 +213,7 @@ public final class StalkerDirector {
         boolean night = t >= 13000 && t <= 23000;
 
         if (!force) {
-            int den = house ? (night ? 2 : 4) : sky ? (night ? 3 : 10) : 3;
+            int den = p.isSleeping() ? 2 : house ? (night ? 2 : 4) : sky ? (night ? 3 : 10) : 3;
             if (r.nextInt(den) != 0) return false;
             if (cave && w.getLightLevel(pos) > 7) return false;
         }
@@ -164,6 +221,9 @@ public final class StalkerDirector {
         List<BlockPos> glass = house
                 ? scan(w, pos, 8, s -> s.isOf(Blocks.GLASS_PANE) || s.isOf(Blocks.GLASS))
                 : List.of();
+
+        // mientras duermes, a veces: algo sube lentamente en la ventana y te obliga a mirarla
+        if (p.isSleeping() && !glass.isEmpty() && r.nextInt(3) == 0 && window(w, p, glass, true)) return true;
 
         List<Supplier<Boolean>> evs = new ArrayList<>();
         if (house) {
@@ -173,8 +233,8 @@ public final class StalkerDirector {
                 evs.add(() -> doorOpens(w, doors));
             }
             if (!glass.isEmpty()) {
-                evs.add(() -> window(w, p, glass));
-                evs.add(() -> window(w, p, glass));
+                evs.add(() -> window(w, p, glass, false));
+                evs.add(() -> window(w, p, glass, false));
             }
             evs.add(() -> footsteps(w, p, 0));
         } else if (sky) {
@@ -246,14 +306,51 @@ public final class StalkerDirector {
         return false;
     }
 
-    /** Un rostro aparece justo al otro lado de una ventana. */
-    private static boolean window(ServerWorld w, ServerPlayerEntity p, List<BlockPos> glass) {
+    /**
+     * Algo sube LENTAMENTE desde abajo de la ventana (sale del suelo) y golpea el vidrio 3 veces antes de irse.
+     * forced (solo mientras duermes): te despierta, te obliga a mirar la ventana y susurra.
+     */
+    private static boolean window(ServerWorld w, ServerPlayerEntity p, List<BlockPos> glass, boolean forced) {
         Random r = w.getRandom();
         for (int i = 0; i < 6; i++) {
             BlockPos g = glass.get(r.nextInt(glass.size()));
-            if (spawnSpy(w, p, beyond(w, p, g, 2.0), HorrorUtil.TAG_ESPIA, false, WINDOW_PREF, false) != null) return true;
+            BlockPos out = beyond(w, p, g, 1.0);
+            MobEntity e = spawnSpy(w, p, out, HorrorUtil.TAG_VENTANA, false, WINDOW_PREF, false);
+            if (e == null) continue;
+            WINDOW_Y.put(e.getUuid(), (double) out.getY());
+            e.setPosition(e.getX(), out.getY() - e.getHeight(), e.getZ());   // empieza bajo tierra
+            if (forced) {
+                forceLook(w, p, Vec3d.ofCenter(g));
+                int now = w.getServer().getTicks();
+                TASKS.add(new Task(now + 60, () -> {
+                    if (e.isRemoved() || p.isRemoved()) return;
+                    w.playSound(null, e.getX(), e.getY() + 1.0, e.getZ(),
+                            ModSounds.AMBIENT[Jumpscare.mobOf(e)], SoundCategory.HOSTILE, 2.0F, 0.8F);
+                    String line = Lore.WHISPERS[w.getRandom().nextInt(Lore.WHISPERS.length)];
+                    p.sendMessage(Text.literal(line).formatted(Formatting.DARK_RED, Formatting.ITALIC), false);
+                }));
+            }
+            return true;
         }
         return false;
+    }
+
+    /** Gira la camara del jugador hacia 'target' durante ~4.5 s (lo despierta si duerme). */
+    private static void forceLook(ServerWorld w, ServerPlayerEntity p, Vec3d target) {
+        if (p.isSleeping()) p.wakeUp(false, true);
+        int now = w.getServer().getTicks();
+        for (int i = 0; i < 45; i++) {
+            TASKS.add(new Task(now + i * 2, () -> {
+                if (p.isRemoved() || !p.isAlive()) return;
+                Vec3d eye = p.getEyePos();
+                double dx = target.x - eye.x;
+                double dy = target.y - eye.y;
+                double dz = target.z - eye.z;
+                float yaw = (float) (MathHelper.atan2(dz, dx) * 57.2957795) - 90.0F;
+                float pitch = (float) -(MathHelper.atan2(dy, Math.sqrt(dx * dx + dz * dz)) * 57.2957795);
+                p.networkHandler.requestTeleport(p.getX(), p.getY(), p.getZ(), yaw, pitch);
+            }));
+        }
     }
 
     /** Al otro lado de un tronco, a 14-28 bloques, medio escondido. */
@@ -367,8 +464,9 @@ public final class StalkerDirector {
     private static boolean whisper(ServerWorld w, ServerPlayerEntity p) {
         String line = Lore.WHISPERS[w.getRandom().nextInt(Lore.WHISPERS.length)];
         p.sendMessage(Text.literal(line).formatted(Formatting.DARK_RED, Formatting.ITALIC), false);
-        w.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.ENTITY_ENDERMAN_AMBIENT,
-                SoundCategory.AMBIENT, 1.0F, 0.5F);
+        w.playSound(null, p.getX(), p.getY(), p.getZ(),
+                ModSounds.AMBIENT[w.getRandom().nextInt(ModSounds.AMBIENT.length)],
+                SoundCategory.AMBIENT, 1.3F, 1.0F);
         return true;
     }
 
@@ -450,6 +548,11 @@ public final class StalkerDirector {
                 continue;
             }
 
+            if (spy.getCommandTags().contains(HorrorUtil.TAG_VENTANA)) {
+                handleWindowVisitor(w, p, spy);
+                continue;
+            }
+
             if (spy.getCommandTags().contains(HorrorUtil.TAG_ESPIA_CAMA)) {
                 if (!isHiding(w, p)) {
                     // saliste de tu escondite: te ataca
@@ -475,6 +578,23 @@ public final class StalkerDirector {
             if (d2 < 81.0 || looked >= 50 || spy.age > 2400) {
                 vanish(w, spy, p, true);
             }
+        }
+    }
+
+    /** Visitante de ventana: sube despacio (5 s), se queda, golpea el vidrio 3 veces y se va. No huye si te acercas. */
+    private static void handleWindowVisitor(ServerWorld w, ServerPlayerEntity p, MobEntity v) {
+        UUID id = v.getUuid();
+        Double ty = WINDOW_Y.get(id);
+        if (ty != null && v.getY() < ty) {
+            v.setPosition(v.getX(), Math.min(ty, v.getY() + 0.04), v.getZ());
+        }
+        int a = v.age;
+        if ((a >= 130 && a < 132) || (a >= 146 && a < 148) || (a >= 162 && a < 164)) {
+            w.playSound(null, v.getX(), v.getY() + 1.2, v.getZ(),
+                    SoundEvents.BLOCK_GLASS_HIT, SoundCategory.HOSTILE, 2.5F, 0.7F);
+        }
+        if (a >= 200) {
+            vanish(w, v, p, false);
         }
     }
 
@@ -526,6 +646,7 @@ public final class StalkerDirector {
         UUID id = spy.getUuid();
         LOOKED.remove(id);
         DOOR_OF.remove(id);
+        WINDOW_Y.remove(id);
         boolean aggressive = HorrorUtil.isAggressive(spy);
         int mob = Jumpscare.mobOf(spy);
         HorrorUtil.poof(spy);
@@ -534,29 +655,56 @@ public final class StalkerDirector {
         }
     }
 
-    // ------------------------------------------------------------------ esconderse junto a la cama
-    /** Agachado (Shift) a menos de 2 bloques de una cama, en interior = escondido. */
+    // ------------------------------------------------------------------ esconderse bajo la cama
     private static boolean isHiding(ServerWorld w, ServerPlayerEntity p) {
-        if (!p.isSneaking() || w.isSkyVisible(p.getBlockPos())) return false;
-        BlockPos c = p.getBlockPos();
-        for (BlockPos q : BlockPos.iterate(c.add(-2, -1, -2), c.add(2, 1, 2))) {
-            if (w.getBlockState(q).isIn(BlockTags.BEDS)) return true;
-        }
-        return false;
+        return HIDDEN.containsKey(p.getUuid());
+    }
+
+    private static void applyHideEffects(ServerPlayerEntity p) {
+        p.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 60, 0, false, false));
+        p.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 60, 6, false, false));
+    }
+
+    private static void hide(ServerWorld w, ServerPlayerEntity p, BlockPos bed) {
+        UUID id = p.getUuid();
+        HIDDEN.put(id, bed);
+        HIDE_TICKS.put(id, 0);
+        applyHideEffects(p);
+        ServerPlayNetworking.send(p, new HidePayload(true));
+        p.sendMessage(Text.literal("Estás escondido bajo la cama. Clic derecho en la cama para salir."), true);
+        w.playSound(null, p.getX(), p.getY(), p.getZ(), SoundEvents.BLOCK_WOOL_PLACE, SoundCategory.PLAYERS, 1.0F, 0.6F);
+    }
+
+    private static void unhide(ServerPlayerEntity p) {
+        UUID id = p.getUuid();
+        if (HIDDEN.remove(id) == null) return;
+        HIDE_TICKS.remove(id);
+        p.removeStatusEffect(StatusEffects.INVISIBILITY);
+        p.removeStatusEffect(StatusEffects.SLOWNESS);
+        ServerPlayNetworking.send(p, new HidePayload(false));
     }
 
     private static void handleHiding(ServerWorld w, ServerPlayerEntity p) {
         UUID id = p.getUuid();
-        if (!isHiding(w, p)) {
+        BlockPos bed = HIDDEN.get(id);
+        if (bed == null) {
             HIDE_TICKS.remove(id);
             return;
         }
         int h = HIDE_TICKS.merge(id, 10, Integer::sum);
+        if (!p.isAlive() || p.squaredDistanceTo(Vec3d.ofCenter(bed)) > 25.0 || h > 1800) {
+            unhide(p);
+            return;
+        }
+        applyHideEffects(p);
         if (h % 40 == 0 || h == 10) {
             w.playSound(null, p.getX(), p.getY(), p.getZ(),
                     SoundEvents.ENTITY_WARDEN_HEARTBEAT, SoundCategory.AMBIENT, 1.0F, 1.0F);
         }
-        // mientras te escondes, los monstruos agresivos pierden tu rastro
+        if (h % 200 == 0) {
+            p.sendMessage(Text.literal("Sigues escondido. Clic derecho en la cama para salir."), true);
+        }
+        // mientras te escondes, los monstruos pierden tu rastro
         for (MobEntity m : w.getEntitiesByClass(MobEntity.class, p.getBoundingBox().expand(32.0),
                 e -> e.getTarget() == p && e instanceof AcosadorEntity && !HorrorUtil.isSpy(e))) {
             m.setTarget(null);

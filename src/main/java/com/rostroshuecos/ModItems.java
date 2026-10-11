@@ -18,6 +18,7 @@ public final class ModItems {
     private ModItems() {}
 
     public static final Item NOTA_ROTA = item("nota_rota", NotaRotaItem::new, new Item.Settings().maxCount(16));
+    public static final Item DIARIO = item("diario", DiarioItem::new, new Item.Settings().maxCount(1));
     public static final Item SOMBRA_HUECA_EGG = egg("sombra_hueca_spawn_egg", ModEntities.SOMBRA_HUECA);
     public static final Item RAIZ_EGG = egg("raiz_spawn_egg", ModEntities.RAIZ);
     public static final Item SUDARIO_EGG = egg("sudario_spawn_egg", ModEntities.SUDARIO);
@@ -36,9 +37,10 @@ public final class ModItems {
 
     public static void register() {
         ItemGroup group = FabricItemGroup.builder()
-                .icon(() -> new ItemStack(NOTA_ROTA))
+                .icon(() -> new ItemStack(DIARIO))
                 .displayName(Text.translatable("itemGroup.rostroshuecos"))
                 .entries((ctx, entries) -> {
+                    entries.add(DIARIO);
                     entries.add(NOTA_ROTA);
                     entries.add(SOMBRA_HUECA_EGG);
                     entries.add(RAIZ_EGG);

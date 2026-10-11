@@ -62,8 +62,4 @@ public class MandibulaEntity extends AcosadorEntity {
         }
     }
 
-    @Override
-    protected SoundEvent getAmbientSound() {
-        return SoundEvents.ENTITY_ZOMBIE_VILLAGER_AMBIENT;
-    }
 }

@@ -12,5 +12,6 @@
   "entity.rostroshuecos.sudario": "The Shroud",
   "entity.rostroshuecos.hueco": "The Hollow",
   "entity.rostroshuecos.mandibula": "Fallen Jaw",
-  "entity.rostroshuecos.doble_boca": "Double Mouth"
+  "entity.rostroshuecos.doble_boca": "Double Mouth",
+  "item.rostroshuecos.diario": "San Mudo Diary"
 }

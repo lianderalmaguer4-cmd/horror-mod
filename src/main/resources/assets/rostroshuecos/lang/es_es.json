@@ -12,5 +12,6 @@
   "entity.rostroshuecos.sudario": "El Sudario",
   "entity.rostroshuecos.hueco": "El Hueco",
   "entity.rostroshuecos.mandibula": "Mandíbula Caída",
-  "entity.rostroshuecos.doble_boca": "Doble Boca"
+  "entity.rostroshuecos.doble_boca": "Doble Boca",
+  "item.rostroshuecos.diario": "Diario de San Mudo"
 }

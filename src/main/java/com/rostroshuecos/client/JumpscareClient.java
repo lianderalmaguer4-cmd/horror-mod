@@ -1,5 +1,6 @@
 package com.rostroshuecos.client;
 
+import com.rostroshuecos.ModSounds;
 import com.rostroshuecos.RostrosHuecos;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -35,14 +36,15 @@ public final class JumpscareClient {
         MinecraftClient mc = MinecraftClient.getInstance();
         type = t;
         total = ticks = (t == 0) ? 45 : 28;
-        current = (mob >= 0 && mob < IMGS.length) ? IMGS[mob] : IMGS[RNG.nextInt(IMGS.length)];
+        int idx = (mob >= 0 && mob < IMGS.length) ? mob : RNG.nextInt(IMGS.length);
+        current = IMGS[idx];
+        // cada monstruo tiene su propio sonido de susto
         if (t == 0) {
-            mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_GHAST_SCREAM, 0.5F, 1.0F));
-            mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_WARDEN_SONIC_BOOM, 0.6F, 1.0F));
-            mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_ELDER_GUARDIAN_CURSE, 0.5F, 1.0F));
+            mc.getSoundManager().play(PositionedSoundInstance.master(ModSounds.SCARE[idx], 1.0F, 1.0F));
+            mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_WARDEN_SONIC_BOOM, 0.7F, 0.5F));
         } else {
-            mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_ENDERMAN_SCREAM, 0.5F, 1.0F));
-            mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_WARDEN_HEARTBEAT, 0.7F, 1.0F));
+            mc.getSoundManager().play(PositionedSoundInstance.master(ModSounds.SCARE[idx], 0.85F, 0.8F));
+            mc.getSoundManager().play(PositionedSoundInstance.master(SoundEvents.ENTITY_WARDEN_HEARTBEAT, 0.7F, 0.8F));
         }
     }
 

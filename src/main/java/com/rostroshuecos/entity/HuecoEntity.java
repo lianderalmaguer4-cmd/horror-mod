@@ -65,8 +65,4 @@ public class HuecoEntity extends AcosadorEntity {
         }
     }
 
-    @Override
-    protected SoundEvent getAmbientSound() {
-        return SoundEvents.ENTITY_VEX_AMBIENT;
-    }
 }

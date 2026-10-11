@@ -2,6 +2,7 @@ package com.rostroshuecos.entity;
 
 import com.rostroshuecos.HorrorUtil;
 import com.rostroshuecos.Jumpscare;
+import com.rostroshuecos.ModSounds;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
@@ -108,6 +109,11 @@ public abstract class AcosadorEntity extends HostileEntity {
             return true;
         }
         return false;
+    }
+
+    @Override
+    protected SoundEvent getAmbientSound() {
+        return ModSounds.AMBIENT[mobIndex()];
     }
 
     @Override

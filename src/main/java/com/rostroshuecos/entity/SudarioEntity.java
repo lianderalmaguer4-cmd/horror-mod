@@ -66,8 +66,4 @@ public class SudarioEntity extends AcosadorEntity {
         }
     }
 
-    @Override
-    protected SoundEvent getAmbientSound() {
-        return SoundEvents.ENTITY_GHAST_AMBIENT;
-    }
 }

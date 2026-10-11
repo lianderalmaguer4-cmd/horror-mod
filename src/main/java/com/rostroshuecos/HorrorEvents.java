@@ -31,6 +31,12 @@ public final class HorrorEvents {
         SoundEvents.BLOCK_BELL_USE
     };
 
+    /** La mitad de las veces suena el ambiente propio de un monstruo; si no, un sonido vanilla inquietante. */
+    private static SoundEvent pick(net.minecraft.util.math.random.Random r) {
+        if (r.nextBoolean()) return ModSounds.AMBIENT[r.nextInt(ModSounds.AMBIENT.length)];
+        return CREEPS[r.nextInt(CREEPS.length)];
+    }
+
     public static void register() {
         ServerTickEvents.END_WORLD_TICK.register(world -> {
             if (world.getTime() % 20 != 0) return;
@@ -38,6 +44,7 @@ public final class HorrorEvents {
             boolean night = t >= 13000 && t <= 23000;
             for (ServerPlayerEntity p : world.getPlayers()) {
                 if (p.isSpectator()) continue;
+                Diary.sweepNotes(p);   // las Notas Rotas se guardan solas en el diario
                 boolean dark = world.getLightLevel(p.getBlockPos()) <= 4;
                 boolean nightOutside = night && world.isSkyVisible(p.getBlockPos());
                 int den = dark ? 45 : (nightOutside ? 70 : 0);
@@ -52,7 +59,7 @@ public final class HorrorEvents {
                         double ang = world.getRandom().nextDouble() * Math.PI * 2;
                         pos = p.getPos().add(Math.cos(ang) * 10, 0, Math.sin(ang) * 10);
                     }
-                    SoundEvent s = CREEPS[world.getRandom().nextInt(CREEPS.length)];
+                    SoundEvent s = pick(world.getRandom());
                     world.playSound(null, pos.x, pos.y, pos.z, s, SoundCategory.AMBIENT,
                             1.3F, 0.5F + world.getRandom().nextFloat() * 0.5F);
                 }

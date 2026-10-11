@@ -13,10 +13,14 @@ public class RostrosHuecos implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        ModSounds.init();
         PayloadTypeRegistry.playS2C().register(JumpscarePayload.ID, JumpscarePayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(HidePayload.ID, HidePayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(DiarioPayload.ID, DiarioPayload.CODEC);
         ModEntities.register();
         ModItems.register();
         HorrorEvents.register();
         StalkerDirector.register();
+        StructureManager.register();
     }
 }

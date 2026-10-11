@@ -43,8 +43,4 @@ public class DobleBocaEntity extends AcosadorEntity {
         }
     }
 
-    @Override
-    protected SoundEvent getAmbientSound() {
-        return SoundEvents.ENTITY_VILLAGER_AMBIENT;
-    }
 }

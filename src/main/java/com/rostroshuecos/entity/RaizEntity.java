@@ -55,8 +55,4 @@ public class RaizEntity extends AcosadorEntity {
         }
     }
 
-    @Override
-    protected SoundEvent getAmbientSound() {
-        return SoundEvents.ENTITY_PHANTOM_AMBIENT;
-    }
 }

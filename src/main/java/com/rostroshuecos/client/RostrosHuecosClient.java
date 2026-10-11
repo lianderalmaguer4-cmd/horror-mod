@@ -1,8 +1,11 @@
 package com.rostroshuecos.client;
 
+import com.rostroshuecos.DiarioPayload;
+import com.rostroshuecos.HidePayload;
 import com.rostroshuecos.JumpscarePayload;
 import com.rostroshuecos.ModEntities;
 import net.fabricmc.api.ClientModInitializer;
+import net.minecraft.client.MinecraftClient;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry;
@@ -27,7 +30,15 @@ public class RostrosHuecosClient implements ClientModInitializer {
 
         ClientPlayNetworking.registerGlobalReceiver(JumpscarePayload.ID,
                 (payload, context) -> JumpscareClient.trigger(payload.type(), payload.mob()));
-        ClientTickEvents.END_CLIENT_TICK.register(client -> JumpscareClient.tick());
+        ClientPlayNetworking.registerGlobalReceiver(HidePayload.ID,
+                (payload, context) -> HideClient.set(payload.hidden()));
+        ClientPlayNetworking.registerGlobalReceiver(DiarioPayload.ID,
+                (payload, context) -> MinecraftClient.getInstance().setScreen(new DiarioScreen(payload.pages())));
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            JumpscareClient.tick();
+            HideClient.tick();
+        });
         HudRenderCallback.EVENT.register(JumpscareClient::render);
+        HudRenderCallback.EVENT.register(HideClient::render);
     }
 }

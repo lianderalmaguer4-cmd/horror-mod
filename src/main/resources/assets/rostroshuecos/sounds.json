@@ -1,0 +1,67 @@
+{
+  "scare.sombra": {
+    "sounds": [
+      "rostroshuecos:scare_sombra"
+    ]
+  },
+  "ambient.sombra": {
+    "sounds": [
+      "rostroshuecos:ambient_sombra"
+    ]
+  },
+  "scare.raiz": {
+    "sounds": [
+      "rostroshuecos:scare_raiz"
+    ]
+  },
+  "ambient.raiz": {
+    "sounds": [
+      "rostroshuecos:ambient_raiz"
+    ]
+  },
+  "scare.sudario": {
+    "sounds": [
+      "rostroshuecos:scare_sudario"
+    ]
+  },
+  "ambient.sudario": {
+    "sounds": [
+      "rostroshuecos:ambient_sudario"
+    ]
+  },
+  "scare.hueco": {
+    "sounds": [
+      "rostroshuecos:scare_hueco"
+    ]
+  },
+  "ambient.hueco": {
+    "sounds": [
+      "rostroshuecos:ambient_hueco"
+    ]
+  },
+  "scare.mandibula": {
+    "sounds": [
+      "rostroshuecos:scare_mandibula"
+    ]
+  },
+  "ambient.mandibula": {
+    "sounds": [
+      "rostroshuecos:ambient_mandibula"
+    ]
+  },
+  "scare.doble_boca": {
+    "sounds": [
+      "rostroshuecos:scare_doble_boca"
+    ]
+  },
+  "ambient.doble_boca": {
+    "sounds": [
+      "rostroshuecos:ambient_doble_boca"
+    ]
+  },
+  "breath": {
+    "sounds": [
+      "rostroshuecos:breath"
+    ]
+  }
+}

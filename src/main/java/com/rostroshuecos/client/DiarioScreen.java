@@ -3,6 +3,7 @@ package com.rostroshuecos.client;
 import java.util.List;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.text.OrderedText;
 import net.minecraft.text.Text;
 import org.lwjgl.glfw.GLFW;
 
@@ -32,7 +33,17 @@ public class DiarioScreen extends Screen {
         ctx.fill(x, y, x + w, y + h, 0xFFE6D6B4);                    // papel
 
         String text = pages.isEmpty() ? "" : pages.get(page);
-        ctx.drawTextWrapped(this.textRenderer, Text.literal(text), x + 14, y + 14, w - 28, 0xFF2B1B10);
+        int ty = y + 14;
+        for (String para : text.split("\n", -1)) {
+            if (para.isEmpty()) {
+                ty += 9;
+                continue;
+            }
+            for (OrderedText line : this.textRenderer.wrapLines(Text.literal(para), w - 28)) {
+                ctx.drawText(this.textRenderer, line, x + 14, ty, 0xFF2B1B10, false);
+                ty += 9;
+            }
+        }
 
         String num = (page + 1) + " / " + pages.size();
         ctx.drawText(this.textRenderer, Text.literal(num),

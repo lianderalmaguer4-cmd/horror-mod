@@ -1,22 +1,44 @@
-# Rostros Huecos — mod de terror (Fabric 1.21.4)
+# Liminal Space — Minecraft Java 1.21.4 (Fabric)
 
-Monstruos (imagenes planas que giran hacia ti, inmortales, solo uno de cada tipo a la vez), cada uno con su sonido de susto y su ambiente propio:
-- Sombra Hueca (neutral), La Raiz (enreda), El Sudario (apaga la luz), El Hueco (vuela, nausea),
-  Mandibula Caida (succiona), Doble Boca (se congela si la miras; repite tu chat).
+## Que incluye
+- Dimension liminal plana de hierba.
+- Pequenas montanitas dispersas.
+- Pilar gigante de roca con cima de tierra/hierba.
+- Escalera exterior hasta la cima.
+- Casa explorable: sala, cocina, dormitorio, pasillo y atico.
+- La entidad 2D **La Cosa / The Whisperer** dentro de la casa.
+- Murmullos, chirridos y movimientos involuntarios.
+- Al acercarte pregunta: **"...¿estas solo?"**
+- Responder `no`/`n`: te devuelve al mundo normal.
+- Responder `si`/`sí`/`s`/`yes`: activa la persecucion.
+- Tras responder si, la criatura acelera sus tics: cabeza, mandibula y manos se mueven mucho mas violentamente.
+- La criatura es invulnerable.
+- Compatible en concepto con shaders y Distant Horizons porque la dimension usa terreno/estructuras vanilla y no requiere un renderizador especial de distancia.
 
-Diario de San Mudo: se entrega al entrar por primera vez al mundo. Muestra controles, monstruos, estructuras y las notas
-que hayas reunido (las Notas Rotas se guardan solas y desaparecen del inventario).
+## Requisitos
+- Minecraft Java 1.21.4
+- Fabric Loader 0.16.10 o superior
+- Fabric API 0.119.3+1.21.4 o superior
+- Java 21
 
-Esconderse: Shift + clic derecho en una cama (bajo techo). Pantalla casi negra, inmovil e invisible. Clic derecho en la cama para salir.
+## Como obtener el .jar
+1. Instala Java 21.
+2. Abre esta carpeta en Windows.
+3. Haz doble clic en `build_mod.bat`.
+4. El script descargara Gradle automaticamente y compilara el proyecto.
+5. El archivo instalable aparecera en `build/libs/liminal-space-1.0.0.jar` (NO uses el que termina en `-sources.jar`).
+6. Copialo a `.minecraft/mods`.
+7. Inicia Minecraft 1.21.4 con Fabric.
+8. En el mundo escribe `/liminal`.
 
-Ventanas: algo sube despacio desde abajo y golpea el vidrio 3 veces. A veces, mientras duermes, te obliga a mirar y susurra.
+La primera compilacion necesita internet para descargar Gradle y las dependencias de Fabric/Minecraft.
 
-Ruinas de San Mudo (Pozo Sellado, Casa, Arbol del Vecino) aparecen al explorar; se anotan en rostroshuecos_estructuras.txt del mundo.
-
-Comandos: /rostros diario | (trucos) /rostros evento, susto, estructura, estructuras.
-
-Compilar sin instalar nada: sube el contenido a GitHub y deja que Actions compile (.github/workflows/build.yml).
-
-v8: la camara baja bajo la cama al esconderte (atributo de escala), 10 s escondido = los monstruos desaparecen;
-rara vez un monstruo sale de debajo de la cama mientras duermes (levantate a tiempo o mueres);
-a veces el monstruo rompe la ventana o abre la puerta para entrar; sonidos rehechos con estilo "analog horror".
+## Correcciones de esta version
+- `Registry` sin importar, `damage()` con la firma de 1.21.4 (`ServerWorld` como primer argumento) y `getSpawnPos()` en lugar de `getSpawnPoint()`.
+- Renderer: los vertices ahora se construyen encadenados (`vertex(...).color(...).texture(...)`), como exige 1.21.4.
+- La entidad ahora tiene atributos por defecto (sin ellos el juego crasheaba al aparecer).
+- Dimension con `dimension_type` propio (`min_y = 0`): antes el suelo quedaba en y = -60 y el pilar flotaba.
+- La escalera ahora rodea el pilar y llega a la cima con un puente hasta la puerta (antes era una torre aparte que no conectaba).
+- Puerta con sus dos mitades, atico con tejado y escalera de mano, linternas colgadas del techo.
+- Ya no se duplican el terreno ni la criatura al reiniciar el servidor; `/liminalbuild` fuerza la reconstruccion.
+- Responder `no` te devuelve al mundo normal sin borrar a la criatura.

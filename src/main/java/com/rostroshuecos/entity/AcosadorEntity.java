@@ -4,13 +4,16 @@ import com.rostroshuecos.FinalEvent;
 import com.rostroshuecos.HorrorUtil;
 import com.rostroshuecos.Jumpscare;
 import com.rostroshuecos.ModSounds;
+import net.minecraft.block.Block;
+import net.minecraft.block.BlockState;
+import net.minecraft.block.DoorBlock;
+import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.ai.goal.ActiveTargetGoal;
 import net.minecraft.entity.ai.goal.LookAroundGoal;
 import net.minecraft.entity.ai.goal.LookAtEntityGoal;
 import net.minecraft.entity.ai.goal.MeleeAttackGoal;
-import net.minecraft.entity.ai.goal.OpenDoorGoal;
 import net.minecraft.entity.ai.goal.RevengeGoal;
 import net.minecraft.entity.ai.goal.SwimGoal;
 import net.minecraft.entity.ai.goal.WanderAroundFarGoal;
@@ -20,11 +23,14 @@ import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.mob.HostileEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.registry.tag.DamageTypeTags;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 
 /**
@@ -70,9 +76,6 @@ public abstract class AcosadorEntity extends HostileEntity {
     @Override
     protected void initGoals() {
         this.goalSelector.add(0, new SwimGoal(this));
-        if (canOpenDoors()) {
-            this.goalSelector.add(1, new OpenDoorGoal(this, true));
-        }
         this.goalSelector.add(2, new MeleeAttackGoal(this, 1.1, false));
         this.goalSelector.add(7, new WanderAroundFarGoal(this, 0.8));
         this.goalSelector.add(8, new LookAtEntityGoal(this, PlayerEntity.class, 16.0F));
@@ -125,6 +128,11 @@ public abstract class AcosadorEntity extends HostileEntity {
             return;
         }
 
+        // abre las puertas de madera que le cierran el paso
+        if (target != null && canOpenDoors() && this.age % 8 == 0) {
+            openDoorAhead(sw);
+        }
+
         // susto al alcanzar a su objetivo
         if (target instanceof ServerPlayerEntity sp && scareCooldown == 0 && this.squaredDistanceTo(sp) < 6.25) {
             Jumpscare.send(sp, 0, mobIndex());
@@ -135,6 +143,25 @@ public abstract class AcosadorEntity extends HostileEntity {
         PlayerEntity close = sw.getClosestPlayer(this, 8.0);
         if (close != null && HorrorUtil.holdsRepeller(close) && !FinalEvent.active) return;
         abilityTick(sw);
+    }
+
+    /** Abre (sin romper) la puerta de madera que tiene justo delante, a la altura de sus pies o de su cabeza. */
+    private void openDoorAhead(ServerWorld w) {
+        BlockPos front = this.getBlockPos().offset(this.getHorizontalFacing());
+        for (int i = 0; i <= 1; i++) {
+            BlockPos pos = front.up(i);
+            BlockState st = w.getBlockState(pos);
+            if (!(st.getBlock() instanceof DoorBlock) || !st.isIn(BlockTags.WOODEN_DOORS)) continue;
+            BlockPos low = (st.get(DoorBlock.HALF) == DoubleBlockHalf.UPPER) ? pos.down() : pos;
+            BlockState ls = w.getBlockState(low);
+            if (!(ls.getBlock() instanceof DoorBlock) || ls.get(DoorBlock.OPEN)) return;
+            w.setBlockState(low, ls.with(DoorBlock.OPEN, true), Block.NOTIFY_ALL);
+            BlockPos up = low.up();
+            BlockState us = w.getBlockState(up);
+            if (us.getBlock() instanceof DoorBlock) w.setBlockState(up, us.with(DoorBlock.OPEN, true), Block.NOTIFY_ALL);
+            w.playSound(null, low, net.minecraft.sound.SoundEvents.BLOCK_WOODEN_DOOR_OPEN, SoundCategory.BLOCKS, 1.2F, 0.6F);
+            return;
+        }
     }
 
     /** Inmortal: ningun golpe les hace dano (solo /kill las elimina). */

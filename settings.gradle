@@ -1,9 +1,7 @@
 pluginManagement {
     repositories {
-        maven { url = 'https://maven.fabricmc.net/' }
-        gradlePluginPortal()
+        maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
         mavenCentral()
+        gradlePluginPortal()
     }
 }
-
-rootProject.name = 'liminal-space'

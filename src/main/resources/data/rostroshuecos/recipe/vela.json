@@ -1,0 +1,6 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": ["minecraft:honeycomb", "minecraft:string", "minecraft:bone_meal"],
+  "result": { "id": "rostroshuecos:vela", "count": 2 }
+}

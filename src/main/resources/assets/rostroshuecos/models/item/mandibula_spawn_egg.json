@@ -1,0 +1,1 @@
+{ "parent": "minecraft:item/generated", "textures": { "layer0": "rostroshuecos:item/mandibula_spawn_egg" } }

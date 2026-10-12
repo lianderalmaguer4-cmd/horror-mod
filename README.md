@@ -1,44 +1,20 @@
-# Liminal Space — Minecraft Java 1.21.4 (Fabric)
+# Rostros Huecos — mod de terror (Fabric 1.21.4)
 
-## Que incluye
-- Dimension liminal plana de hierba.
-- Pequenas montanitas dispersas.
-- Pilar gigante de roca con cima de tierra/hierba.
-- Escalera exterior hasta la cima.
-- Casa explorable: sala, cocina, dormitorio, pasillo y atico.
-- La entidad 2D **La Cosa / The Whisperer** dentro de la casa.
-- Murmullos, chirridos y movimientos involuntarios.
-- Al acercarte pregunta: **"...¿estas solo?"**
-- Responder `no`/`n`: te devuelve al mundo normal.
-- Responder `si`/`sí`/`s`/`yes`: activa la persecucion.
-- Tras responder si, la criatura acelera sus tics: cabeza, mandibula y manos se mueven mucho mas violentamente.
-- La criatura es invulnerable.
-- Compatible en concepto con shaders y Distant Horizons porque la dimension usa terreno/estructuras vanilla y no requiere un renderizador especial de distancia.
+Monstruos (imagenes planas que giran hacia ti, inmortales, solo uno de cada tipo): Sombra Hueca (neutral), La Raiz, El Sudario,
+El Hueco (vuela), Mandibula Caida, Doble Boca. Abren puertas, te pierden si te agachas lejos y respetan la Vela de Sal y el Sello.
 
-## Requisitos
-- Minecraft Java 1.21.4
-- Fabric Loader 0.16.10 o superior
-- Fabric API 0.119.3+1.21.4 o superior
-- Java 21
+Diario de San Mudo (se entrega al empezar): controles, monstruos, estructuras, fragmentos, notas y el final.
 
-## Como obtener el .jar
-1. Instala Java 21.
-2. Abre esta carpeta en Windows.
-3. Haz doble clic en `build_mod.bat`.
-4. El script descargara Gradle automaticamente y compilara el proyecto.
-5. El archivo instalable aparecera en `build/libs/liminal-space-1.0.0.jar` (NO uses el que termina en `-sources.jar`).
-6. Copialo a `.minecraft/mods`.
-7. Inicia Minecraft 1.21.4 con Fabric.
-8. En el mundo escribe `/liminal`.
+Esconderse: Shift + clic derecho en una cama (bajo techo). La camara baja bajo la cama. 10 s escondido = se van.
+Dormir: rara vez algo sale de debajo de la cama; levantate a tiempo.
+Ventanas: sube despacio, golpea 3 veces; a veces rompe el cristal. Puertas: a veces se abre sola.
 
-La primera compilacion necesita internet para descargar Gradle y las dependencias de Fabric/Minecraft.
+Estructuras (aparecen al explorar): Pozo Sellado, Casa, Arbol del Vecino, Capilla, Cementerio. Al reunir las 10 Notas Rotas se abre el
+Pozo de San Mudo (final).
 
-## Correcciones de esta version
-- `Registry` sin importar, `damage()` con la firma de 1.21.4 (`ServerWorld` como primer argumento) y `getSpawnPos()` en lugar de `getSpawnPoint()`.
-- Renderer: los vertices ahora se construyen encadenados (`vertex(...).color(...).texture(...)`), como exige 1.21.4.
-- La entidad ahora tiene atributos por defecto (sin ellos el juego crasheaba al aparecer).
-- Dimension con `dimension_type` propio (`min_y = 0`): antes el suelo quedaba en y = -60 y el pilar flotaba.
-- La escalera ahora rodea el pilar y llega a la cima con un puente hasta la puerta (antes era una torre aparte que no conectaba).
-- Puerta con sus dos mitades, atico con tejado y escalera de mano, linternas colgadas del techo.
-- Ya no se duplican el terreno ni la criatura al reiniciar el servidor; `/liminalbuild` fuerza la reconstruccion.
-- Responder `no` te devuelve al mundo normal sin borrar a la criatura.
+EL FINAL: 6 fragmentos (cada monstruo deja el suyo si sobrevives a su persecucion completa; la Sombra lo deja con su carta) ->
+colocarlos en el altar de obsidiana llorosa del fondo del pozo -> resistir 90 s -> FIN y Sello de San Mudo. Despues los eventos se calman.
+
+Vela de Sal: panal + hilo + polvo de hueso. Comandos: /rostros diario | (trucos) evento, susto, estructura, final, fragmentos, notas, estructuras.
+
+Compilar sin instalar nada: sube el contenido a GitHub y deja que Actions compile (.github/workflows/build.yml).

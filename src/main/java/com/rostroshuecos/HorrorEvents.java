@@ -66,6 +66,7 @@ public final class HorrorEvents {
                 boolean dark = world.getLightLevel(p.getBlockPos()) <= 4;
                 boolean nightOutside = night && world.isSkyVisible(p.getBlockPos());
                 int den = dark ? 45 : (nightOutside ? 70 : 0);
+                if (HorrorUtil.isModDim(world) && den > 0) den = Math.max(15, den / 2);   // la Pradera y la Ceniza suenan mas
                 if (den == 0) continue;
 
                 // sonido raro: a tu espalda (60%) o en una direccion cualquiera

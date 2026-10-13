@@ -40,12 +40,14 @@ import net.minecraft.world.World;
 public final class StructureManager {
     private StructureManager() {}
 
-    private record Placed(int x, int z, int type) {}
+    private record Placed(int x, int z, int type, int dim) {}
     private static final List<Placed> PLACED = new ArrayList<>();
     private static boolean loaded = false;
 
     private static final String[] NAMES = {"Pozo Sellado", "Casa de San Mudo", "Árbol del Vecino",
-            "Capilla de San Mudo", "Cementerio de San Mudo", "Pozo de San Mudo (final)"};
+            "Capilla de San Mudo", "Cementerio de San Mudo", "Pozo de San Mudo (final)",
+            "Puerta Corrupta", "Casa inicial"};
+    private static final String[] DIM_NAMES = {"Overworld", "Pradera", "Tierra de Ceniza"};
 
     public static void register() {
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
@@ -70,7 +72,10 @@ public final class StructureManager {
             if (!Files.exists(f)) return;
             for (String line : Files.readAllLines(f)) {
                 String[] p = line.trim().split(" ");
-                if (p.length == 3) PLACED.add(new Placed(Integer.parseInt(p[0]), Integer.parseInt(p[1]), Integer.parseInt(p[2])));
+                if (p.length >= 3) {
+                    PLACED.add(new Placed(Integer.parseInt(p[0]), Integer.parseInt(p[1]), Integer.parseInt(p[2]),
+                            p.length >= 4 ? Integer.parseInt(p[3]) : 0));
+                }
             }
         } catch (IOException | NumberFormatException ignored) {
         }
@@ -79,7 +84,7 @@ public final class StructureManager {
     private static void save(MinecraftServer s) {
         try {
             StringBuilder sb = new StringBuilder();
-            for (Placed p : PLACED) sb.append(p.x()).append(' ').append(p.z()).append(' ').append(p.type()).append('\n');
+            for (Placed p : PLACED) sb.append(p.x()).append(' ').append(p.z()).append(' ').append(p.type()).append(' ').append(p.dim()).append('\n');
             Files.writeString(file(s), sb.toString());
         } catch (IOException ignored) {
         }
@@ -87,38 +92,62 @@ public final class StructureManager {
 
     public static List<String> describe() {
         List<String> out = new ArrayList<>();
-        for (Placed p : PLACED) out.add(NAMES[p.type()] + ": x=" + p.x() + " z=" + p.z());
+        for (Placed p : PLACED) out.add(NAMES[p.type()] + " [" + DIM_NAMES[p.dim()] + "]: x=" + p.x() + " z=" + p.z());
         return out;
     }
 
     // ------------------------------------------------------------------ aparicion
-    /** Llamado cada 10 s por jugador en la superficie. */
+    /** Llamado cada 10 s (5 s en las dimensiones del mod) por jugador en la superficie. */
     public static void tick(ServerWorld w, ServerPlayerEntity p) {
-        if (!loaded || w.getRegistryKey() != World.OVERWORLD) return;
+        boolean overworld = w.getRegistryKey() == World.OVERWORLD;
+        boolean modDim = HorrorUtil.isModDim(w);
+        if (!loaded || !(overworld || modDim)) return;
+        int dim = HorrorUtil.dimIndex(w);
+        Random r = w.getRandom();
+
+        // el Pozo de San Mudo (final) se abre donde estes al completar las notas
         if (p.getCommandTags().contains("rh_final_pending") && !hasType(5)) {
             if (placeFinal(w, p)) {
                 p.removeCommandTag("rh_final_pending");
                 int[] c = finalCoords();
                 if (c != null) {
-                    p.sendMessage(net.minecraft.text.Text.literal("Las notas se ordenan solas. Algo se abrió en la tierra: x=" + c[0] + " z=" + c[1] + ".")
+                    p.sendMessage(net.minecraft.text.Text.literal("Las notas se ordenan solas. Algo se abrió en la tierra ("
+                                    + DIM_NAMES[c[2]] + "): x=" + c[0] + " z=" + c[1] + ".")
                             .formatted(net.minecraft.util.Formatting.DARK_RED, net.minecraft.util.Formatting.ITALIC), false);
                 }
             }
             return;
         }
         if (!w.isSkyVisible(p.getBlockPos())) return;
-        Random r = w.getRandom();
-        if (r.nextInt(3) != 0) return;
+
+        // la Puerta Corrupta tiene que existir en el Overworld
+        if (overworld && !hasType(6, 0)) {
+            if (r.nextInt(2) == 0) tryPlaceNear(w, p, 6);
+            return;
+        }
+        if (overworld && r.nextInt(3) != 0) return;
+
+        // en la Pradera y la Ceniza hay muchas mas ruinas (cada ~110 bloques) que en el Overworld (cada ~300)
+        double spacing = modDim ? 110.0 : 300.0;
         for (Placed s : PLACED) {
+            if (s.dim() != dim) continue;
             double dx = s.x() - p.getX();
             double dz = s.z() - p.getZ();
-            if (dx * dx + dz * dz < 300.0 * 300.0) return;
+            if (dx * dx + dz * dz < spacing * spacing) return;
         }
-        double ang = r.nextDouble() * Math.PI * 2;
-        double dist = 55 + r.nextInt(25);
-        int x = (int) Math.floor(p.getX() + Math.cos(ang) * dist);
-        int z = (int) Math.floor(p.getZ() + Math.sin(ang) * dist);
-        place(w, x, z, r.nextInt(5), false);
+        tryPlaceNear(w, p, r.nextInt(5));
+    }
+
+    private static boolean tryPlaceNear(ServerWorld w, ServerPlayerEntity p, int type) {
+        Random r = w.getRandom();
+        for (int i = 0; i < 12; i++) {
+            double ang = r.nextDouble() * Math.PI * 2;
+            double dist = 50 + r.nextInt(30);
+            int x = (int) Math.floor(p.getX() + Math.cos(ang) * dist);
+            int z = (int) Math.floor(p.getZ() + Math.sin(ang) * dist);
+            if (place(w, x, z, type, false)) return true;
+        }
+        return false;
     }
 
     /** Para el comando de prueba: delante del jugador, sin exigir terreno plano. */
@@ -153,9 +182,10 @@ public final class StructureManager {
             case 3 -> buildChapel(w, x, gy, z);
             case 4 -> buildGraveyard(w, x, gy, z);
             case 5 -> buildFinalWell(w, x, gy, z);
+            case 6 -> buildCorruptDoor(w, x, gy, z);
             default -> buildTree(w, x, gy, z);
         }
-        PLACED.add(new Placed(x, z, type));
+        PLACED.add(new Placed(x, z, type, HorrorUtil.dimIndex(w)));
         save(w.getServer());
         return true;
     }
@@ -165,21 +195,93 @@ public final class StructureManager {
         return false;
     }
 
-    /** Coordenadas del Pozo de San Mudo (final), o null si aun no existe. */
+    public static boolean hasType(int type, int dim) {
+        for (Placed p : PLACED) if (p.type() == type && p.dim() == dim) return true;
+        return false;
+    }
+
+    /** {x, z, dimension} del Pozo de San Mudo (final), o null si aun no existe. */
     public static int[] finalCoords() {
-        for (Placed p : PLACED) if (p.type() == 5) return new int[] {p.x(), p.z()};
+        for (Placed p : PLACED) if (p.type() == 5) return new int[] {p.x(), p.z(), p.dim()};
         return null;
     }
 
+    /** {x, z} de la Puerta Corrupta del Overworld, o null. */
+    public static int[] doorCoords() {
+        for (Placed p : PLACED) if (p.type() == 6) return new int[] {p.x(), p.z()};
+        return null;
+    }
+
+    public static String dimName(int dim) {
+        return DIM_NAMES[Math.max(0, Math.min(2, dim))];
+    }
+
     /** ¿Esta posicion esta en el Pozo final? (el altar de obsidiana llorosa esta en su centro) */
-    public static boolean nearFinal(BlockPos pos) {
+    public static boolean nearFinal(ServerWorld w, BlockPos pos) {
+        int dim = HorrorUtil.dimIndex(w);
         for (Placed p : PLACED) {
-            if (p.type() != 5) continue;
+            if (p.type() != 5 || p.dim() != dim) continue;
             int dx = p.x() - pos.getX();
             int dz = p.z() - pos.getZ();
             if (dx * dx + dz * dz <= 16) return true;
         }
         return false;
+    }
+
+    /** La puerta carmesi de la Puerta Corrupta (siempre en el Overworld). */
+    public static boolean isCorruptDoor(ServerWorld w, BlockPos pos) {
+        if (HorrorUtil.dimIndex(w) != 0) return false;
+        for (Placed p : PLACED) if (p.type() == 6 && p.x() == pos.getX() && p.z() == pos.getZ()) return true;
+        return false;
+    }
+
+    /** La puerta trasera (carmesi) de la casa inicial: vuelve al Overworld. */
+    public static boolean isReturnDoor(ServerWorld w, BlockPos pos) {
+        int dim = HorrorUtil.dimIndex(w);
+        if (dim == 0) return false;
+        for (Placed p : PLACED) {
+            if (p.type() == 7 && p.dim() == dim && p.x() == pos.getX() && p.z() == pos.getZ()) return true;
+        }
+        return false;
+    }
+
+    /** ¿Hay una casa inicial a menos de 'r' bloques de (x,z) en esta dimension? (el terreno se mantiene plano a su alrededor) */
+    public static boolean nearHouse(ServerWorld w, int x, int z, int r) {
+        int dim = HorrorUtil.dimIndex(w);
+        for (Placed p : PLACED) {
+            if (p.type() != 7 || p.dim() != dim) continue;
+            int dx = p.x() - x;
+            int dz = p.z() - (z - 3);
+            if (dx * dx + dz * dz <= r * r) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Devuelve {x, y, z} de la casa inicial del jugador en esa dimension, construyendola la primera vez.
+     * Cada jugador tiene la suya (separadas 120 bloques en el eje X).
+     */
+    public static int[] ensureHouse(ServerWorld dw, ServerPlayerEntity p, int dim) {
+        String prefix = "rhh_" + dim + "_";
+        for (String t : p.getCommandTags()) {
+            if (t.startsWith(prefix)) {
+                String[] a = t.substring(prefix.length()).split("_");
+                return new int[] {Integer.parseInt(a[0]), DimTerrain.STAND_Y, Integer.parseInt(a[1])};
+            }
+        }
+        int n = 0;
+        for (Placed s : PLACED) if (s.type() == 7 && s.dim() == dim) n++;
+        int hx = n * 120;
+        int hz = 0;
+        // fuerza la generacion de los chunks de la casa
+        for (int cx = (hx - 9) >> 4; cx <= (hx + 9) >> 4; cx++) {
+            for (int cz = (hz - 9) >> 4; cz <= (hz + 9) >> 4; cz++) dw.getChunk(cx, cz);
+        }
+        buildStarterHouse(dw, hx, DimTerrain.STAND_Y, hz, dim == 2);
+        PLACED.add(new Placed(hx, hz - 3, 7, dim));   // se anota la puerta trasera (la de regreso)
+        save(dw.getServer());
+        p.addCommandTag(prefix + hx + "_" + hz);
+        return new int[] {hx, DimTerrain.STAND_Y, hz};
     }
 
     private static boolean placeFinal(ServerWorld w, ServerPlayerEntity p) {
@@ -482,6 +584,98 @@ public final class StructureManager {
         }
         for (int i = 0; i < 10; i++) {
             put(w, cx - 3 + r.nextInt(7), gy - 12, cz - 3 + r.nextInt(7), Blocks.COBWEB.getDefaultState());
+        }
+    }
+
+    // ------------------------------------------------------------------ PUERTA CORRUPTA (Overworld)
+    private static void buildCorruptDoor(ServerWorld w, int cx, int gy, int cz) {
+        Random r = w.getRandom();
+        BlockState pb = Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState();
+        BlockState cry = Blocks.CRYING_OBSIDIAN.getDefaultState();
+        prepare(w, cx, gy, cz, 4);
+        fill(w, cx - 3, gy - 1, cz - 3, cx + 3, gy - 1, cz + 3, Blocks.POLISHED_BLACKSTONE.getDefaultState());
+        for (int y = gy; y <= gy + 3; y++) {
+            put(w, cx - 1, y, cz, pb);
+            put(w, cx + 1, y, cz, pb);
+        }
+        put(w, cx, gy + 2, cz, pb);
+        put(w, cx, gy + 3, cz, pb);
+        putQuiet(w, cx, gy, cz, Blocks.CRIMSON_DOOR.getDefaultState()
+                .with(DoorBlock.FACING, Direction.SOUTH).with(DoorBlock.HALF, DoubleBlockHalf.LOWER));
+        putQuiet(w, cx, gy + 1, cz, Blocks.CRIMSON_DOOR.getDefaultState()
+                .with(DoorBlock.FACING, Direction.SOUTH).with(DoorBlock.HALF, DoubleBlockHalf.UPPER));
+        put(w, cx - 2, gy, cz, cry);
+        put(w, cx + 2, gy, cz, cry);
+        put(w, cx - 1, gy + 4, cz, cry);
+        put(w, cx + 1, gy + 4, cz, cry);
+        for (int i = 0; i < 5; i++) {
+            put(w, cx - 2 + r.nextInt(5), gy, cz - 2 + r.nextInt(5), Blocks.COBWEB.getDefaultState());
+        }
+    }
+
+    // ------------------------------------------------------------------ CASA INICIAL (Pradera / Ceniza)
+    private static void buildStarterHouse(ServerWorld w, int cx, int gy, int cz, boolean burnt) {
+        Random r = w.getRandom();
+        BlockState plank = (burnt ? Blocks.DARK_OAK_PLANKS : Blocks.SPRUCE_PLANKS).getDefaultState();
+        BlockState log = (burnt ? Blocks.DARK_OAK_LOG : Blocks.SPRUCE_LOG).getDefaultState();
+        BlockState base = (burnt ? Blocks.BLACKSTONE : Blocks.MOSSY_COBBLESTONE).getDefaultState();
+        BlockState air = Blocks.AIR.getDefaultState();
+        prepare(w, cx, gy, cz, 6);
+        fill(w, cx - 3, gy - 1, cz - 3, cx + 3, gy - 1, cz + 3, plank);
+        for (int dx = -3; dx <= 3; dx++) {
+            for (int dz = -3; dz <= 3; dz++) {
+                if (Math.max(Math.abs(dx), Math.abs(dz)) != 3) continue;
+                boolean corner = Math.abs(dx) == 3 && Math.abs(dz) == 3;
+                for (int y = 0; y <= 3; y++) {
+                    put(w, cx + dx, gy + y, cz + dz, corner ? log : (y == 0 ? base : plank));
+                }
+            }
+        }
+        fill(w, cx - 3, gy + 4, cz - 3, cx + 3, gy + 4, cz + 3, plank);
+        // puerta de entrada (sur)
+        putQuiet(w, cx, gy, cz + 3, (burnt ? Blocks.DARK_OAK_DOOR : Blocks.SPRUCE_DOOR).getDefaultState()
+                .with(DoorBlock.FACING, Direction.SOUTH).with(DoorBlock.HALF, DoubleBlockHalf.LOWER));
+        putQuiet(w, cx, gy + 1, cz + 3, (burnt ? Blocks.DARK_OAK_DOOR : Blocks.SPRUCE_DOOR).getDefaultState()
+                .with(DoorBlock.FACING, Direction.SOUTH).with(DoorBlock.HALF, DoubleBlockHalf.UPPER));
+        // puerta trasera carmesi (norte): vuelve al Overworld
+        putQuiet(w, cx, gy, cz - 3, Blocks.CRIMSON_DOOR.getDefaultState()
+                .with(DoorBlock.FACING, Direction.NORTH).with(DoorBlock.HALF, DoubleBlockHalf.LOWER));
+        putQuiet(w, cx, gy + 1, cz - 3, Blocks.CRIMSON_DOOR.getDefaultState()
+                .with(DoorBlock.FACING, Direction.NORTH).with(DoorBlock.HALF, DoubleBlockHalf.UPPER));
+        put(w, cx - 1, gy + 2, cz - 3, Blocks.CRYING_OBSIDIAN.getDefaultState());
+        put(w, cx + 1, gy + 2, cz - 3, Blocks.CRYING_OBSIDIAN.getDefaultState());
+        // ventanas (en la ceniza, casi todas rotas)
+        for (int sx : new int[] {-3, 3}) {
+            for (int dz : new int[] {-1, 1}) {
+                boolean glass = burnt ? r.nextInt(5) == 0 : r.nextInt(5) != 0;
+                put(w, cx + sx, gy + 1, cz + dz, glass ? Blocks.GLASS_PANE.getDefaultState() : air);
+            }
+        }
+        // cama, cofre con provisiones, estante, mesa y horno
+        putQuiet(w, cx - 2, gy, cz - 2, Blocks.RED_BED.getDefaultState()
+                .with(BedBlock.FACING, Direction.EAST).with(BedBlock.PART, BedPart.FOOT));
+        putQuiet(w, cx - 1, gy, cz - 2, Blocks.RED_BED.getDefaultState()
+                .with(BedBlock.FACING, Direction.EAST).with(BedBlock.PART, BedPart.HEAD));
+        BlockPos cp = new BlockPos(cx + 2, gy, cz - 2);
+        w.setBlockState(cp, Blocks.CHEST.getDefaultState().with(ChestBlock.FACING, Direction.SOUTH));
+        BlockEntity be = w.getBlockEntity(cp);
+        if (be instanceof ChestBlockEntity c) {
+            c.setStack(0, new ItemStack(Items.BREAD, 12));
+            c.setStack(1, new ItemStack(Items.TORCH, 16));
+            c.setStack(2, new ItemStack(ModItems.VELA, 2));
+            c.setStack(3, new ItemStack(Items.IRON_SWORD, 1));
+            c.setStack(4, new ItemStack(Items.COOKED_BEEF, 8));
+        }
+        put(w, cx + 1, gy, cz - 2, Blocks.BOOKSHELF.getDefaultState());
+        put(w, cx + 1, gy + 1, cz - 2, Blocks.BOOKSHELF.getDefaultState());
+        put(w, cx + 2, gy, cz + 2, Blocks.CRAFTING_TABLE.getDefaultState());
+        put(w, cx - 2, gy, cz + 2, Blocks.FURNACE.getDefaultState());
+        put(w, cx, gy, cz, Blocks.RED_CARPET.getDefaultState());
+        put(w, cx, gy, cz + 1, Blocks.RED_CARPET.getDefaultState());
+        if (burnt) {
+            for (int i = 0; i < 10; i++) {
+                put(w, cx - 2 + r.nextInt(5), gy + 3, cz - 2 + r.nextInt(5), Blocks.COBWEB.getDefaultState());
+            }
         }
     }
 }

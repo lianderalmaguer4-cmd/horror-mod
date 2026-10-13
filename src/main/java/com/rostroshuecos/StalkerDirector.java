@@ -146,7 +146,18 @@ public final class StalkerDirector {
                 return ActionResult.SUCCESS;
             }
             BlockPos pos = hit.getBlockPos();
-            if (world.getBlockState(pos).isOf(Blocks.CRYING_OBSIDIAN) && StructureManager.nearFinal(pos)) {
+            if (world.getBlockState(pos).getBlock() instanceof DoorBlock) {
+                ServerWorld dw = sp.getServerWorld();
+                if (StructureManager.isCorruptDoor(dw, pos)) {
+                    DimensionTravel.enter(sp);
+                    return ActionResult.SUCCESS;
+                }
+                if (StructureManager.isReturnDoor(dw, pos)) {
+                    DimensionTravel.leave(sp);
+                    return ActionResult.SUCCESS;
+                }
+            }
+            if (world.getBlockState(pos).isOf(Blocks.CRYING_OBSIDIAN) && StructureManager.nearFinal(sp.getServerWorld(), pos)) {
                 return FinalEvent.useAltar(sp, sp.getServerWorld(), pos);
             }
             if (!world.getBlockState(pos).isIn(BlockTags.BEDS)) return ActionResult.PASS;
@@ -201,6 +212,22 @@ public final class StalkerDirector {
                     ctx.getSource().getPlayerOrThrow().giveItemStack(new ItemStack(ModItems.NOTA_ROTA, 10));
                     return 1;
                 }))
+                .then(CommandManager.literal("puerta").requires(src -> src.hasPermissionLevel(2)).executes(ctx -> {
+                    ServerPlayerEntity pl = ctx.getSource().getPlayerOrThrow();
+                    boolean ok = StructureManager.forcePlace(pl.getServerWorld(), pl, 6);
+                    ctx.getSource().sendFeedback(() -> Text.literal(ok
+                            ? "Puerta Corrupta creada delante de ti."
+                            : "No se pudo crear aquí (terreno sin cargar o con agua)."), false);
+                    return ok ? 1 : 0;
+                }))
+                .then(CommandManager.literal("pradera").requires(src -> src.hasPermissionLevel(2)).executes(ctx -> {
+                    DimensionTravel.enter(ctx.getSource().getPlayerOrThrow(), false);
+                    return 1;
+                }))
+                .then(CommandManager.literal("ceniza").requires(src -> src.hasPermissionLevel(2)).executes(ctx -> {
+                    DimensionTravel.enter(ctx.getSource().getPlayerOrThrow(), true);
+                    return 1;
+                }))
                 .then(CommandManager.literal("final").requires(src -> src.hasPermissionLevel(2)).executes(ctx -> {
                     ServerPlayerEntity pl = ctx.getSource().getPlayerOrThrow();
                     boolean ok = StructureManager.forcePlace(pl.getServerWorld(), pl, 5);
@@ -230,7 +257,7 @@ public final class StalkerDirector {
             if (time % 2 == 0) handleSpies(w, p);
             if (time % 10 == 0) handleHiding(w, p);
 
-            if (time % 200 == 0) StructureManager.tick(w, p);
+            if (time % (HorrorUtil.isModDim(w) ? 100 : 200) == 0) StructureManager.tick(w, p);
 
             if (time % 100 == 0) {
                 if (FinalEvent.active) continue;
@@ -238,7 +265,9 @@ public final class StalkerDirector {
                 Integer next = NEXT_EVENT.get(id);
                 if (next != null && now < next) continue;
                 if (triggerEvent(w, p, false)) {
-                    NEXT_EVENT.put(id, now + 500 + w.getRandom().nextInt(800)); // 25 - 65 s
+                    int cd = 500 + w.getRandom().nextInt(800);   // 25 - 65 s
+                    if (HorrorUtil.isModDim(w)) cd /= 2;          // el doble de seguido en la Pradera y la Ceniza
+                    NEXT_EVENT.put(id, now + cd);
                 }
             }
         }
@@ -249,7 +278,7 @@ public final class StalkerDirector {
         BlockPos pos = p.getBlockPos();
         Random r = w.getRandom();
         boolean sky = w.isSkyVisible(pos);
-        List<BlockPos> doors = sky ? List.of() : scan(w, pos, 8, s -> s.isIn(BlockTags.WOODEN_DOORS));
+        List<BlockPos> doors = sky ? List.of() : scan(w, pos, 8, s -> s.isIn(BlockTags.WOODEN_DOORS) && !s.isOf(Blocks.CRIMSON_DOOR));
         List<BlockPos> beds = sky ? List.of() : scan(w, pos, 8, s -> s.isIn(BlockTags.BEDS));
         boolean house = !doors.isEmpty() || !beds.isEmpty();
         boolean cave = !sky && !house;
@@ -258,6 +287,7 @@ public final class StalkerDirector {
 
         if (!force) {
             int den = p.isSleeping() ? 2 : house ? (night ? 2 : 4) : sky ? (night ? 3 : 10) : 3;
+            if (HorrorUtil.isModDim(w)) den = Math.max(1, den / 2);   // monstruos mas activos
             if (r.nextInt(den) != 0) return false;
             if (cave && w.getLightLevel(pos) > 7) return false;
         }

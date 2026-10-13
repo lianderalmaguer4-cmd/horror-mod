@@ -98,4 +98,19 @@ public final class HorrorUtil {
             }
         }
     }
+
+    // ---- dimensiones del mod (data/rostroshuecos/dimension): 1 = Pradera, 2 = Tierra de Ceniza ----
+    public static boolean isModDim(ServerWorld w) {
+        return RostrosHuecos.MOD_ID.equals(w.getRegistryKey().getValue().getNamespace());
+    }
+
+    public static boolean isAsh(ServerWorld w) {
+        return w.getRegistryKey().getValue().equals(RostrosHuecos.id("ceniza"));
+    }
+
+    /** 0 = Overworld (u otra), 1 = Pradera, 2 = Ceniza. */
+    public static int dimIndex(ServerWorld w) {
+        if (isAsh(w)) return 2;
+        return isModDim(w) ? 1 : 0;
+    }
 }

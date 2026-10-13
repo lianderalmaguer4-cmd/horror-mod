@@ -23,5 +23,6 @@ public class RostrosHuecos implements ModInitializer {
         StalkerDirector.register();
         StructureManager.register();
         FinalEvent.register();
+        DimTerrain.register();
     }
 }

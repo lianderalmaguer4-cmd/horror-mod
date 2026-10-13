@@ -18,3 +18,11 @@ colocarlos en el altar de obsidiana llorosa del fondo del pozo -> resistir 90 s 
 Vela de Sal: panal + hilo + polvo de hueso. Comandos: /rostros diario | (trucos) evento, susto, estructura, final, fragmentos, notas, estructuras.
 
 Compilar sin instalar nada: sube el contenido a GitHub y deja que Actions compile (.github/workflows/build.yml).
+
+## Dimensiones (v11)
+- Puerta Corrupta (Overworld): arco de piedra negra con puerta carmesi. Clic derecho = viajar. Sin las 10 notas lleva a LA PRADERA
+  (llano casi plano, bultos anchos y bajos, muy pocos arboles, muchas mas ruinas); con las 10 notas, a la TIERRA DE CENIZA
+  (noche fija, ceniza cayendo, mas eventos y mas persecuciones). La primera vez se construye una casa inicial para el jugador;
+  su puerta trasera carmesi vuelve al Overworld.
+- Todo se define en data/rostroshuecos/dimension* (generador plano) y se esculpe en DimTerrain.java.
+- Comandos de prueba: /rostros puerta | pradera | ceniza.

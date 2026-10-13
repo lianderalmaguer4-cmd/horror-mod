@@ -1,0 +1,30 @@
+{
+  "type": "rostroshuecos:ceniza",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "minecraft:plains",
+      "lakes": false,
+      "features": false,
+      "structure_overrides": [],
+      "layers": [
+        {
+          "block": "minecraft:bedrock",
+          "height": 1
+        },
+        {
+          "block": "minecraft:stone",
+          "height": 58
+        },
+        {
+          "block": "minecraft:gravel",
+          "height": 2
+        },
+        {
+          "block": "minecraft:coarse_dirt",
+          "height": 3
+        }
+      ]
+    }
+  }
+}

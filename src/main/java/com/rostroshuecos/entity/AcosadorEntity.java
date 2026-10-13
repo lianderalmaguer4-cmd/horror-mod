@@ -6,6 +6,7 @@ import com.rostroshuecos.Jumpscare;
 import com.rostroshuecos.ModSounds;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
+import net.minecraft.block.Blocks;
 import net.minecraft.block.DoorBlock;
 import net.minecraft.block.enums.DoubleBlockHalf;
 import net.minecraft.entity.EntityType;
@@ -118,7 +119,7 @@ public abstract class AcosadorEntity extends HostileEntity {
         // la persecucion dura un rato; si sobrevives, deja caer su fragmento y desaparece
         if (target != null) {
             idleTicks = 0;
-            if (++chaseTicks > chaseLimit() && !FinalEvent.active) {
+            if (++chaseTicks > chaseLimit() * (HorrorUtil.isAsh(sw) ? 2 : 1) && !FinalEvent.active) {
                 if (target instanceof ServerPlayerEntity) HorrorUtil.dropFragment(this, mobIndex());
                 HorrorUtil.poof(this);
                 return;
@@ -151,7 +152,7 @@ public abstract class AcosadorEntity extends HostileEntity {
         for (int i = 0; i <= 1; i++) {
             BlockPos pos = front.up(i);
             BlockState st = w.getBlockState(pos);
-            if (!(st.getBlock() instanceof DoorBlock) || !st.isIn(BlockTags.WOODEN_DOORS)) continue;
+            if (!(st.getBlock() instanceof DoorBlock) || !st.isIn(BlockTags.WOODEN_DOORS) || st.isOf(Blocks.CRIMSON_DOOR)) continue;
             BlockPos low = (st.get(DoorBlock.HALF) == DoubleBlockHalf.UPPER) ? pos.down() : pos;
             BlockState ls = w.getBlockState(low);
             if (!(ls.getBlock() instanceof DoorBlock) || ls.get(DoorBlock.OPEN)) return;

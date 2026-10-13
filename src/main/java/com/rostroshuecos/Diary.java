@@ -80,7 +80,7 @@ public final class Diary {
         pg.add("CONTROLES\n\n• Diario: clic derecho para abrirlo.\n• Esconderte: Shift + clic derecho en una cama, bajo techo. La cámara baja al suelo, bajo la cama; quedas inmóvil e invisible. Clic derecho en cualquier bloque para salir.\n• Notas Rotas: se guardan solas en este diario.");
         pg.add("EVENTOS\n\n• Golpes en la puerta: alguien espera afuera. Si abres, el agresivo ataca; la Sombra deja una carta.\n• Ventanas: algo sube desde abajo y golpea el vidrio 3 veces. A veces, mientras duermes, te obliga a mirar.\n• Árboles y cuevas: figuras que te espían y desaparecen si te acercas.");
         pg.add("PELIGROS\n\n• Dormir: rara vez algo sale despacio de debajo de la cama. Levántate a tiempo o morirás.\n• A veces el monstruo rompe la ventana o abre la puerta por sí mismo para entrar.\n• Escondite: si aguantas 10 segundos bajo la cama, los monstruos se rinden y desaparecen. Si sales antes de tiempo, te atacan.\n• Si te agachas lejos, pueden perderte.");
-        pg.add("COMANDOS\n\n/rostros diario: otro diario\n(con trucos)\n/rostros evento, susto\n/rostros estructura: ruina al azar\n/rostros final: el pozo final\n/rostros fragmentos, notas\n/rostros estructuras: lista\n\nLos monstruos son inmortales y solo hay uno de cada tipo a la vez.");
+        pg.add("COMANDOS\n\n/rostros diario: otro diario\n(con trucos)\n/rostros evento, susto\n/rostros estructura: ruina al azar\n/rostros final, puerta: crear\n/rostros pradera, ceniza: viajar\n/rostros fragmentos, notas\n/rostros estructuras: lista\n\nLos monstruos son inmortales y solo hay uno de cada tipo a la vez.");
         pg.add("SOMBRA HUECA (neutral)\n\nAlta y delgada, de ojos blancos. Ignora a quien no la mira. Si la miras o la golpeas, te persigue y te da Oscuridad.\nSi llama a tu puerta, abre: te deja una nota y su fragmento.\n\nConsejo: mira al suelo.");
         pg.add("LA RAÍZ (agresiva)\n\nSe alza en los bosques. Brazos de rama, falda de raíces. Es lenta, pero a menos de 7 bloques te ENREDA y casi no puedes moverte. Persigue unos 55 s.\n\nConsejo: corre en cuanto la veas, antes de que te alcance la vista.");
         pg.add("EL SUDARIO (agresivo)\n\nUna figura envuelta en oscuridad. APAGA la luz: rompe antorchas y linternas cercanas y te llena de Oscuridad a menos de 12 bloques. Persigue unos 45 s.\n\nConsejo: no confíes en tus antorchas.");
@@ -88,6 +88,9 @@ public final class Diary {
         pg.add("MANDÍBULA CAÍDA (agresiva)\n\nSu boca descolgada SUCCIONA: cada 8 s, si estás entre 3 y 12 bloques y te ve, te arrastra hacia ella y te ralentiza. Persigue unos 45 s.\n\nConsejo: rompe la línea de visión tras una pared.");
         pg.add("DOBLE BOCA (agresiva)\n\nSonríe y camina erguida. Se CONGELA si la miras y corre si no. Repite en el chat lo que escribes. Persigue unos 50 s.\n\nConsejo: retrocede sin quitarle la vista de encima.");
         pg.add("VELA DE SAL\n\nReceta sin forma: panal + hilo + polvo de hueso (da 2).\nSostenla en la mano: los monstruos a menos de 8 bloques pierden tu rastro y sus poderes. Se gasta (unos 60 s) mientras haya alguno cerca.\n\nHay velas en el cofre del pozo final.");
+        int[] door = StructureManager.doorCoords();
+        String doorTxt = door == null ? "Aún no la has visto: explora el Overworld." : "Una puerta corrupta se alza en x=" + door[0] + " z=" + door[1] + ".";
+        pg.add("LA PUERTA CORRUPTA\n\n" + doorTxt + "\n\nAl cruzarla por primera vez, aparece una casa para ti en otro mundo: la PRADERA, un llano casi plano con pocas ruinas... y muchas. Con las diez notas, la puerta te lleva a la TIERRA DE CENIZA, oscura y más peligrosa. La puerta carmesi de tu casa vuelve al Overworld.");
         pg.add("ESTRUCTURAS\n\nMientras exploras aparecen ruinas de San Mudo:\n• El Pozo Sellado: tapa de piedra y escalera.\n• La Casa: cama, ventanas rotas.\n• El Árbol del Vecino y su tumba.\n• La Capilla: banco, altar y campana.\n• El Cementerio: tumbas con cofres enterrados.\nTodas guardan Notas Rotas.");
         pg.add("FRAGMENTOS\n\nCada monstruo deja caer su fragmento si sobrevives a su persecución completa (la Sombra lo deja junto a su carta).\nColocados en el altar: " + FinalEvent.placedCount(p) + "/6\n\n" + fragLine(p, 0, "Sombra") + fragLine(p, 1, "Raíz") + fragLine(p, 2, "Sudario") + fragLine(p, 3, "Hueco") + fragLine(p, 4, "Mandíbula") + fragLine(p, 5, "Doble Boca"));
         int n = collected(p);
@@ -103,7 +106,7 @@ public final class Diary {
             pg.add("EL FINAL\n\n???\n\nReúne las diez notas para saber dónde está el pozo verdadero.");
         } else {
             int[] c = StructureManager.finalCoords();
-            String where = c == null ? "El pozo aún se está abriendo. Explora la superficie." : "Una grieta se abrió en x=" + c[0] + " z=" + c[1] + ".";
+            String where = c == null ? "El pozo aún se está abriendo. Explora la superficie." : "Una grieta se abrió en " + StructureManager.dimName(c[2]) + ": x=" + c[0] + " z=" + c[1] + ".";
             pg.add("EL FINAL\n\n" + where + "\n\nBaja hasta el fondo. Coloca los 6 fragmentos en el altar de obsidiana llorosa (clic derecho con el fragmento en la mano) y resiste 90 segundos mientras los seis te cazan.\n\nAbajo hay velas.");
         }
         if (FinalEvent.finished(p)) {

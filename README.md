@@ -1,28 +1,13 @@
 # Rostros Huecos — mod de terror (Fabric 1.21.4)
 
-Monstruos (imagenes planas que giran hacia ti, inmortales, solo uno de cada tipo): Sombra Hueca (neutral), La Raiz, El Sudario,
-El Hueco (vuela), Mandibula Caida, Doble Boca. Abren puertas, te pierden si te agachas lejos y respetan la Vela de Sal y el Sello.
+HISTORIA (San Mudo, el curandero del pueblo que desaparecio a los ninos junto al pozo):
+1. Overworld: encuentra la Puerta Corrupta. Al cruzarla ya no hay vuelta atras (solo con el ritual de salida: 5 Sal). Si mueres, reapareces en tu casa de la dimension.
+2. LA PRADERA: los monstruos solo te observan (te siguen a distancia, golpean, se asoman); no pueden danarte. Reune las 10 notas; con ellas se abre el Pozo de San Mudo.
+3. En el altar del pozo, la voz de San Mudo cuenta su version; se lee la ultima pagina y TODO COMIENZA: pasas a la TIERRA DE CENIZA, donde los monstruos ya atacan.
+4. San Mudo (benefactor aparente) te manda a liberar a los seis ninos con RITUALES en sus estructuras (1 Sal cada uno). Cada ritual invoca al monstruo encadenado, con su propia condicion y efectos; al vencerlo suelta su fragmento y no vuelve a aparecer.
+5. Con los 6 fragmentos, en el altar de su laboratorio se revela el engano: 20 s para huir y despues San Mudo te caza 120 s suplicando ayuda. Si sobrevives: FIN, Sello de San Mudo y vuelves al Overworld.
 
-Diario de San Mudo (se entrega al empezar): controles, monstruos, estructuras, fragmentos, notas y el final.
+RITUALES: Sombra (Cementerio) no la mires | Raiz (Arbol) rompe 5 raices | Sudario (Casa) manten 3 de 4 velas | Hueco (Pozo Sellado) no apartes la mirada | Mandibula (Capilla) 7 campanadas | Doble Boca (Escuela) escribe «ya no hay ninos» 3 veces.
 
-Esconderse: Shift + clic derecho en una cama (bajo techo). La camara baja bajo la cama. 10 s escondido = se van.
-Dormir: rara vez algo sale de debajo de la cama; levantate a tiempo.
-Ventanas: sube despacio, golpea 3 veces; a veces rompe el cristal. Puertas: a veces se abre sola.
-
-Estructuras (aparecen al explorar): Pozo Sellado, Casa, Arbol del Vecino, Capilla, Cementerio. Al reunir las 10 Notas Rotas se abre el
-Pozo de San Mudo (final).
-
-EL FINAL: 6 fragmentos (cada monstruo deja el suyo si sobrevives a su persecucion completa; la Sombra lo deja con su carta) ->
-colocarlos en el altar de obsidiana llorosa del fondo del pozo -> resistir 90 s -> FIN y Sello de San Mudo. Despues los eventos se calman.
-
-Vela de Sal: panal + hilo + polvo de hueso. Comandos: /rostros diario | (trucos) evento, susto, estructura, final, fragmentos, notas, estructuras.
-
-Compilar sin instalar nada: sube el contenido a GitHub y deja que Actions compile (.github/workflows/build.yml).
-
-## Dimensiones (v11)
-- Puerta Corrupta (Overworld): arco de piedra negra con puerta carmesi. Clic derecho = viajar. Sin las 10 notas lleva a LA PRADERA
-  (llano casi plano, bultos anchos y bajos, muy pocos arboles, muchas mas ruinas); con las 10 notas, a la TIERRA DE CENIZA
-  (noche fija, ceniza cayendo, mas eventos y mas persecuciones). La primera vez se construye una casa inicial para el jugador;
-  su puerta trasera carmesi vuelve al Overworld.
-- Todo se define en data/rostroshuecos/dimension* (generador plano) y se esculpe en DimTerrain.java.
-- Comandos de prueba: /rostros puerta | pradera | ceniza.
+Diario con secciones (indice + scroll). Ver la seccion Comandos del diario para probar con trucos (/rostros etapa, sal, notas, fragmentos, puerta, pradera, ceniza, estructura, final...).
+Compilar sin instalar nada: subir el contenido a GitHub y dejar que Actions compile (.github/workflows/build.yml).

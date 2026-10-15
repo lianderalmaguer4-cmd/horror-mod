@@ -9,7 +9,7 @@ import net.minecraft.util.Identifier;
 public final class ModSounds {
     private ModSounds() {}
 
-    public static final String[] IDS = {"sombra", "raiz", "sudario", "hueco", "mandibula", "doble_boca"};
+    public static final String[] IDS = {"sombra", "raiz", "sudario", "hueco", "mandibula", "doble_boca", "san_mudo"};
     public static final SoundEvent[] SCARE = new SoundEvent[IDS.length];
     public static final SoundEvent[] AMBIENT = new SoundEvent[IDS.length];
     public static final SoundEvent BREATH = reg("breath");

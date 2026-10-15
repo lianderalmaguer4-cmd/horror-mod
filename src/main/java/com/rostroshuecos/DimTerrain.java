@@ -102,7 +102,7 @@ public final class DimTerrain {
         double t = (n - 0.52) / 0.48;
         if (t <= 0) return 0;
         double fade = Math.min(1.0, Math.max(0.0, (Math.sqrt((double) x * x + (double) z * z) - 16) / 30.0));
-        if (StructureManager.nearHouse(w, x, z, 18)) fade = 0;
+        if (StructureManager.nearAny(w, x, z, 18)) fade = 0;
         return (int) Math.round(Math.min(1.0, t) * 5.0 * fade);
     }
 
@@ -159,7 +159,7 @@ public final class DimTerrain {
     }
 
     private static void plantTree(ServerWorld w, int x, int z, boolean ash, long hh) {
-        if (StructureManager.nearHouse(w, x, z, 20)) return;
+        if (StructureManager.nearAny(w, x, z, 20)) return;
         int base = SURFACE + bump(w, x, z) + 1;
         if (!ash) {
             int height = 5 + (int) ((hh >>> 40) & 0xFF) % 3;

@@ -13,6 +13,7 @@ import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -32,6 +33,8 @@ import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.mob.Monster;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.tag.BlockTags;
@@ -92,6 +95,11 @@ public final class StalkerDirector {
     private static final float[] MUSIC = {1.0F, 1.26F, 1.5F, 1.26F, 1.19F, 1.0F, 0.89F, 0.84F, 0.75F, 0.71F};
 
     private record Task(int at, Runnable run) {}
+
+    /** Ejecuta 'r' dentro de 'delay' ticks. */
+    public static void later(ServerWorld w, int delay, Runnable r) {
+        TASKS.add(new Task(w.getServer().getTicks() + delay, r));
+    }
     private static final List<Task> TASKS = new ArrayList<>();
 
     public static void register() {
@@ -109,6 +117,7 @@ public final class StalkerDirector {
 
         // Doble Boca repite en el chat lo que escribes (si existe en el mundo)
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, params) -> {
+            Rituals.onChat(sender, message.getContent().getString());   // ritual de Doble Boca
             ServerWorld sw = sender.getServerWorld();
             if (!HorrorUtil.exists(sw, ModEntities.DOBLE_BOCA)) return;
             String txt = message.getContent().getString();
@@ -123,6 +132,12 @@ public final class StalkerDirector {
                             SoundEvents.ENTITY_VILLAGER_AMBIENT, SoundCategory.HOSTILE, 1.2F, 0.5F);
                 }));
             });
+        });
+
+        ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
+            if (HorrorUtil.isModDim(world) && entity instanceof Monster && !(entity instanceof AcosadorEntity)) {
+                later(world, 1, entity::discard);
+            }
         });
 
         // Al entrar: el diario inicial (una sola vez) y se limpia cualquier escondite viejo
@@ -153,9 +168,16 @@ public final class StalkerDirector {
                     return ActionResult.SUCCESS;
                 }
                 if (StructureManager.isReturnDoor(dw, pos)) {
-                    DimensionTravel.leave(sp);
+                    DimensionTravel.tryLeave(sp);
                     return ActionResult.SUCCESS;
                 }
+            }
+            if (world.getBlockState(pos).isOf(Blocks.LODESTONE)) {
+                ActionResult rr = Rituals.useAltar(sp, sp.getServerWorld(), pos);
+                if (rr != ActionResult.PASS) return rr;
+            }
+            if (world.getBlockState(pos).isOf(Blocks.BELL)) {
+                Rituals.onBell(sp, pos);   // cuenta la campanada del ritual (la campana suena igual)
             }
             if (world.getBlockState(pos).isOf(Blocks.CRYING_OBSIDIAN) && StructureManager.nearFinal(sp.getServerWorld(), pos)) {
                 return FinalEvent.useAltar(sp, sp.getServerWorld(), pos);
@@ -220,6 +242,18 @@ public final class StalkerDirector {
                             : "No se pudo crear aquí (terreno sin cargar o con agua)."), false);
                     return ok ? 1 : 0;
                 }))
+                .then(CommandManager.literal("etapa").requires(src -> src.hasPermissionLevel(2))
+                    .then(CommandManager.argument("n", IntegerArgumentType.integer(0, 5)).executes(ctx -> {
+                        ServerPlayerEntity pl = ctx.getSource().getPlayerOrThrow();
+                        int n = IntegerArgumentType.getInteger(ctx, "n");
+                        Quest.setStage(pl, n);
+                        ctx.getSource().sendFeedback(() -> Text.literal("Etapa de la historia: " + n), false);
+                        return 1;
+                    })))
+                .then(CommandManager.literal("sal").requires(src -> src.hasPermissionLevel(2)).executes(ctx -> {
+                    ctx.getSource().getPlayerOrThrow().giveItemStack(new ItemStack(ModItems.SAL, 16));
+                    return 1;
+                }))
                 .then(CommandManager.literal("pradera").requires(src -> src.hasPermissionLevel(2)).executes(ctx -> {
                     DimensionTravel.enter(ctx.getSource().getPlayerOrThrow(), false);
                     return 1;
@@ -259,8 +293,12 @@ public final class StalkerDirector {
 
             if (time % (HorrorUtil.isModDim(w) ? 100 : 200) == 0) StructureManager.tick(w, p);
 
+            if (time % 3000 == 0 && Quest.stage(p) == 2 && !FinalEvent.active && !Rituals.active) {
+                SanMudo.hint(w, p);   // San Mudo recuerda lo que hay que hacer
+            }
+
             if (time % 100 == 0) {
-                if (FinalEvent.active) continue;
+                if (FinalEvent.active || Rituals.active) continue;
                 if (FinalEvent.finished(p) && w.getRandom().nextInt(6) != 0) continue;   // tras el final, el mundo se calma
                 Integer next = NEXT_EVENT.get(id);
                 if (next != null && now < next) continue;
@@ -314,11 +352,14 @@ public final class StalkerDirector {
         } else if (sky) {
             evs.add(() -> tree(w, p));
             evs.add(() -> tree(w, p));
+            evs.add(() -> stalk(w, p));
+            evs.add(() -> stalk(w, p));
             evs.add(() -> footsteps(w, p, 2));
             if (night) evs.add(() -> hunt(w, p));
         } else {
             evs.add(() -> cave(w, p));
             evs.add(() -> cave(w, p));
+            evs.add(() -> stalk(w, p));
             evs.add(() -> footsteps(w, p, 1));
             evs.add(() -> hunt(w, p));
         }
@@ -491,9 +532,47 @@ public final class StalkerDirector {
         return false;
     }
 
+    /**
+     * ACECHO: un monstruo aparece a 28-40 bloques y te SIGUE a distancia mientras no lo miras. Se esfuma si lo miras
+     * ~2 s o si te acercas a menos de 14 bloques. Nunca ataca: solo observa.
+     */
+    private static boolean stalk(ServerWorld w, ServerPlayerEntity p) {
+        Random r = w.getRandom();
+        for (int i = 0; i < 30; i++) {
+            double ang = r.nextDouble() * Math.PI * 2;
+            double dist = 28 + r.nextInt(13);
+            int x = (int) Math.floor(p.getX() + Math.cos(ang) * dist);
+            int z = (int) Math.floor(p.getZ() + Math.sin(ang) * dist);
+            if (!w.isChunkLoaded(x >> 4, z >> 4)) continue;
+            BlockPos g = groundNear(w, new BlockPos(x, p.getBlockY(), z), 6);
+            if (g == null) continue;
+            if (spawnSpy(w, p, g, HorrorUtil.TAG_ACECHO, false, AGGRESSIVE, false) != null) return true;
+        }
+        return false;
+    }
+
+    private static void handleStalker(ServerWorld w, ServerPlayerEntity p, MobEntity v) {
+        UUID id = v.getUuid();
+        double d2 = v.squaredDistanceTo(p);
+        int looked = LOOKED.getOrDefault(id, 0);
+        boolean looking = HorrorUtil.isLookingAt(p, v);
+        if (looking) looked += 2; else looked = Math.max(0, looked - 1);
+        LOOKED.put(id, looked);
+        if (looked >= 40 || d2 < 196.0 || v.age > 3600) {
+            vanish(w, v, p, true);
+            return;
+        }
+        // cuando no lo miras, se acerca poco a poco (sin pasar de ~18 bloques)
+        if (!looking && d2 > 324.0) {
+            Vec3d dir = new Vec3d(p.getX() - v.getX(), 0, p.getZ() - v.getZ()).normalize().multiply(0.35);
+            BlockPos g = groundNear(w, BlockPos.ofFloored(v.getX() + dir.x, v.getY(), v.getZ() + dir.z), 3);
+            if (g != null) v.setPosition(g.getX() + 0.5, g.getY(), g.getZ() + 0.5);
+        }
+    }
+
     /** Un monstruo agresivo aparece a 16-26 bloques y te persigue (desaparece solo tras un rato). */
     private static boolean hunt(ServerWorld w, ServerPlayerEntity p) {
-        if (w.getDifficulty() == Difficulty.PEACEFUL) return false;
+        if (w.getDifficulty() == Difficulty.PEACEFUL || !Quest.aggressive(p)) return false;
         Random r = w.getRandom();
         for (int i = 0; i < 40; i++) {
             double ang = r.nextDouble() * Math.PI * 2;
@@ -554,7 +633,7 @@ public final class StalkerDirector {
         String line = Lore.WHISPERS[w.getRandom().nextInt(Lore.WHISPERS.length)];
         p.sendMessage(Text.literal(line).formatted(Formatting.DARK_RED, Formatting.ITALIC), false);
         w.playSound(null, p.getX(), p.getY(), p.getZ(),
-                ModSounds.AMBIENT[w.getRandom().nextInt(ModSounds.AMBIENT.length)],
+                ModSounds.AMBIENT[w.getRandom().nextInt(ModSounds.AMBIENT.length - 1)],
                 SoundCategory.AMBIENT, 1.3F, 1.0F);
         return true;
     }
@@ -618,6 +697,7 @@ public final class StalkerDirector {
         List<EntityType<? extends MobEntity>> all = new ArrayList<>(AGGRESSIVE);
         all.add(ModEntities.SOMBRA_HUECA);
         all.removeIf(type -> HorrorUtil.exists(w, type));
+        all.removeIf(HorrorUtil::isDefeatedType);
         List<EntityType<? extends MobEntity>> pool = new ArrayList<>(all);
         pool.removeIf(type -> !prefer.contains(type));
         if (pool.isEmpty()) {
@@ -627,29 +707,6 @@ public final class StalkerDirector {
         if (pool.isEmpty()) return null;
         EntityType<? extends MobEntity> type = pool.get(w.getRandom().nextInt(pool.size()));
         return type.spawn(w, pos, SpawnReason.EVENT);
-    }
-
-    /** Para el final: asegura que los seis esten presentes cerca de ti y todos te persigan. */
-    public static void finalWave(ServerWorld w, ServerPlayerEntity p) {
-        List<EntityType<? extends MobEntity>> all = new ArrayList<>(AGGRESSIVE);
-        all.add(ModEntities.SOMBRA_HUECA);
-        Random r = w.getRandom();
-        for (EntityType<? extends MobEntity> type : all) {
-            if (HorrorUtil.exists(w, type)) continue;
-            BlockPos spot = null;
-            for (int i = 0; i < 80 && spot == null; i++) {
-                int dx = r.nextInt(25) - 12;
-                int dz = r.nextInt(25) - 12;
-                if (dx * dx + dz * dz < 4) continue;
-                spot = groundNear(w, p.getBlockPos().add(dx, 0, dz), 5);
-            }
-            if (spot == null) spot = p.getBlockPos().up();
-            type.spawn(w, spot, SpawnReason.EVENT);
-        }
-        for (MobEntity m : w.getEntitiesByClass(MobEntity.class, p.getBoundingBox().expand(128.0),
-                e -> e instanceof AcosadorEntity && !HorrorUtil.isSpy(e))) {
-            m.setTarget(p);
-        }
     }
 
     /** Genera un monstruo quieto (espia) con una etiqueta de comportamiento. */
@@ -686,6 +743,11 @@ public final class StalkerDirector {
                 continue;
             }
 
+            if (spy.getCommandTags().contains(HorrorUtil.TAG_ACECHO)) {
+                handleStalker(w, p, spy);
+                continue;
+            }
+
             if (spy.getCommandTags().contains(HorrorUtil.TAG_BAJO_CAMA)) {
                 handleBedVisitor(w, p, spy);
                 continue;
@@ -693,12 +755,17 @@ public final class StalkerDirector {
 
             if (spy.getCommandTags().contains(HorrorUtil.TAG_ESPIA_CAMA)) {
                 if (!isHiding(w, p)) {
-                    // saliste de tu escondite: te ataca
-                    spy.removeCommandTag(HorrorUtil.TAG_ESPIA_CAMA);
-                    spy.setAiDisabled(false);
-                    spy.setNoGravity(false);
-                    spy.setTarget(p);
-                    Jumpscare.send(p, 0, Jumpscare.mobOf(spy));
+                    if (Quest.aggressive(p)) {
+                        // saliste de tu escondite: te ataca
+                        spy.removeCommandTag(HorrorUtil.TAG_ESPIA_CAMA);
+                        spy.setAiDisabled(false);
+                        spy.setNoGravity(false);
+                        spy.setTarget(p);
+                        Jumpscare.send(p, 0, Jumpscare.mobOf(spy));
+                    } else {
+                        Jumpscare.send(p, 1, Jumpscare.mobOf(spy));   // solo observaba
+                        vanish(w, spy, p, false);
+                    }
                 } else if (spy.age > 240) {
                     vanish(w, spy, p, false);
                 }
@@ -734,7 +801,7 @@ public final class StalkerDirector {
         if (a >= 200) {
             BlockPos g = WINDOW_G.get(id);
             // a veces (1 de 4) el agresivo rompe el cristal y entra a buscarte
-            if (g != null && HorrorUtil.isAggressive(v) && w.getRandom().nextInt(4) == 0 && breakIn(w, p, v, g)) {
+            if (g != null && HorrorUtil.isAggressive(v) && Quest.aggressive(p) && w.getRandom().nextInt(4) == 0 && breakIn(w, p, v, g)) {
                 return;
             }
             vanish(w, v, p, false);
@@ -813,8 +880,16 @@ public final class StalkerDirector {
         }
         if (v.age >= 74) {           // ya se alzo completamente y sigues en la cama
             BED_DONE.add(id);
-            Jumpscare.send(owner, 2, Jumpscare.mobOf(v));
             int now = w.getServer().getTicks();
+            if (!Quest.aggressive(owner)) {
+                // fase de acecho: te asusta pero no te mata
+                Jumpscare.send(owner, 1, Jumpscare.mobOf(v));
+                TASKS.add(new Task(now + 30, () -> {
+                    if (!v.isRemoved()) vanish(w, v, owner, false);
+                }));
+                return;
+            }
+            Jumpscare.send(owner, 2, Jumpscare.mobOf(v));
             TASKS.add(new Task(now + 40, () -> {
                 if (!owner.isRemoved() && owner.isAlive()) {
                     var server = owner.getServer();
@@ -839,11 +914,15 @@ public final class StalkerDirector {
         if (opened) {
             DOOR_OF.remove(v.getUuid());
             v.removeCommandTag(HorrorUtil.TAG_PUERTA);
-            if (HorrorUtil.isAggressive(v)) {
+            if (HorrorUtil.isAggressive(v) && Quest.aggressive(p)) {
                 v.setAiDisabled(false);
                 v.setNoGravity(false);
                 v.setTarget(p);
                 Jumpscare.send(p, 0, Jumpscare.mobOf(v));
+            } else if (HorrorUtil.isAggressive(v)) {
+                // fase de acecho: solo te observaba. Abres y se esfuma, con un susto.
+                Jumpscare.send(p, 1, Jumpscare.mobOf(v));
+                HorrorUtil.poof(v);
             } else {
                 giveLetter(w, p, v);
                 HorrorUtil.poof(v);
@@ -855,7 +934,7 @@ public final class StalkerDirector {
                 TASKS.add(new Task(now, () -> knockSound(w, low)));
                 TASKS.add(new Task(now + 12, () -> knockSound(w, low)));
             }
-            if (HorrorUtil.isAggressive(v) && v.age >= 300 && v.age < 302 && w.getRandom().nextInt(3) == 0) {
+            if (HorrorUtil.isAggressive(v) && Quest.aggressive(p) && v.age >= 300 && v.age < 302 && w.getRandom().nextInt(3) == 0) {
                 setDoorOpen(w, low);   // abre la puerta el mismo; en la siguiente comprobacion entra a atacar
                 return;
             }
@@ -865,9 +944,6 @@ public final class StalkerDirector {
 
     private static void giveLetter(ServerWorld w, ServerPlayerEntity p, MobEntity v) {
         p.giveItemStack(new ItemStack(ModItems.NOTA_ROTA));
-        if (Jumpscare.mobOf(v) == 0 && !p.getCommandTags().contains("rh_frag_0")) {
-            p.giveItemStack(new ItemStack(ModItems.FRAGMENTOS[0]));   // la Sombra deja su fragmento junto a la carta
-        }
         int page = w.getRandom().nextInt(Lore.PAGES.length);
         p.sendMessage(Text.literal("<").append(v.getName()).append("> ").formatted(Formatting.DARK_GRAY)
                 .append(Text.literal(Lore.PAGES[page]).formatted(Formatting.GRAY, Formatting.ITALIC)), false);
@@ -1013,18 +1089,18 @@ public final class StalkerDirector {
         return dx * dx + dz * dz;
     }
 
-    private static boolean isFree(ServerWorld w, BlockPos pos) {
+    static boolean isFree(ServerWorld w, BlockPos pos) {
         BlockState s = w.getBlockState(pos);
         return s.getCollisionShape(w, pos).isEmpty() && s.getFluidState().isEmpty();
     }
 
-    private static boolean solidBelow(ServerWorld w, BlockPos pos) {
+    static boolean solidBelow(ServerWorld w, BlockPos pos) {
         BlockPos b = pos.down();
         return !w.getBlockState(b).getCollisionShape(w, b).isEmpty();
     }
 
     /** Suelo libre cerca de 'start' (hasta 2 bloques arriba y 'down' abajo). */
-    private static BlockPos groundNear(ServerWorld w, BlockPos start, int down) {
+    static BlockPos groundNear(ServerWorld w, BlockPos start, int down) {
         for (int i = -2; i <= down; i++) {
             BlockPos c = start.down(i);
             if (isFree(w, c) && isFree(w, c.up()) && solidBelow(w, c)) return c;

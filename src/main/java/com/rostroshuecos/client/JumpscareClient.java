@@ -20,8 +20,8 @@ public final class JumpscareClient {
 
     private record Img(Identifier normal, Identifier glitch, int w, int h) {}
 
-    // 0 Sombra, 1 Raiz, 2 Sudario, 3 Hueco, 4 Mandibula, 5 Doble Boca (todas 910x590)
-    private static final Img[] IMGS = new Img[6];
+    // 0 Sombra, 1 Raiz, 2 Sudario, 3 Hueco, 4 Mandibula, 5 Doble Boca, 6 San Mudo (todas 910x590)
+    private static final Img[] IMGS = new Img[7];
     static {
         for (int i = 0; i < IMGS.length; i++) {
             IMGS[i] = new Img(RostrosHuecos.id("textures/gui/jumpscare_" + i + ".png"),
@@ -40,7 +40,7 @@ public final class JumpscareClient {
         MinecraftClient mc = MinecraftClient.getInstance();
         type = t;
         total = ticks = (t == 0) ? 45 : (t == 1 ? 28 : 80);
-        int idx = (mob >= 0 && mob < IMGS.length) ? mob : RNG.nextInt(IMGS.length);
+        int idx = (mob >= 0 && mob < IMGS.length) ? mob : RNG.nextInt(6);   // al azar: nunca San Mudo
         current = IMGS[idx];
         // cada monstruo tiene su propio sonido de susto
         if (t == 0) {

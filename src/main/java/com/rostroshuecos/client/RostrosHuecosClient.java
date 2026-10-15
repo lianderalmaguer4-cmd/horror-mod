@@ -25,6 +25,8 @@ public class RostrosHuecosClient implements ClientModInitializer {
                 ctx -> new SpriteEntityRenderer<>(ctx, "hueco", 1.7F, 0.75F));
         EntityRendererRegistry.register(ModEntities.MANDIBULA,
                 ctx -> new SpriteEntityRenderer<>(ctx, "mandibula", 2.3F, 0.334F));
+        EntityRendererRegistry.register(ModEntities.SAN_MUDO,
+                ctx -> new SpriteEntityRenderer<>(ctx, "san_mudo", 3.1F, 0.264F));
         EntityRendererRegistry.register(ModEntities.DOBLE_BOCA,
                 ctx -> new SpriteEntityRenderer<>(ctx, "doble_boca", 2.1F, 0.451F));
 

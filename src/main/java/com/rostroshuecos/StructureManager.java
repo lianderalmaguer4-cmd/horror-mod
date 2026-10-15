@@ -46,7 +46,7 @@ public final class StructureManager {
 
     private static final String[] NAMES = {"Pozo Sellado", "Casa de San Mudo", "Árbol del Vecino",
             "Capilla de San Mudo", "Cementerio de San Mudo", "Pozo de San Mudo (final)",
-            "Puerta Corrupta", "Casa inicial"};
+            "Puerta Corrupta", "Casa inicial", "Escuela de San Mudo"};
     private static final String[] DIM_NAMES = {"Overworld", "Pradera", "Tierra de Ceniza"};
 
     public static void register() {
@@ -92,7 +92,9 @@ public final class StructureManager {
 
     public static List<String> describe() {
         List<String> out = new ArrayList<>();
-        for (Placed p : PLACED) out.add(NAMES[p.type()] + " [" + DIM_NAMES[p.dim()] + "]: x=" + p.x() + " z=" + p.z());
+        for (Placed p : PLACED) {
+            if (p.type() < 100) out.add(NAMES[p.type()] + " [" + DIM_NAMES[p.dim()] + "]: x=" + p.x() + " z=" + p.z());
+        }
         return out;
     }
 
@@ -106,7 +108,7 @@ public final class StructureManager {
         Random r = w.getRandom();
 
         // el Pozo de San Mudo (final) se abre donde estes al completar las notas
-        if (p.getCommandTags().contains("rh_final_pending") && !hasType(5)) {
+        if (p.getCommandTags().contains("rh_final_pending") && dim == 1 && !hasType(5, 1)) {
             if (placeFinal(w, p)) {
                 p.removeCommandTag("rh_final_pending");
                 int[] c = finalCoords();
@@ -135,10 +137,11 @@ public final class StructureManager {
             double dz = s.z() - p.getZ();
             if (dx * dx + dz * dz < spacing * spacing) return;
         }
-        tryPlaceNear(w, p, r.nextInt(5));
+        int[] kinds = {0, 1, 2, 3, 4, 8};   // pozo sellado, casa, arbol, capilla, cementerio, escuela
+        tryPlaceNear(w, p, kinds[r.nextInt(kinds.length)]);
     }
 
-    private static boolean tryPlaceNear(ServerWorld w, ServerPlayerEntity p, int type) {
+    static boolean tryPlaceNear(ServerWorld w, ServerPlayerEntity p, int type) {
         Random r = w.getRandom();
         for (int i = 0; i < 12; i++) {
             double ang = r.nextDouble() * Math.PI * 2;
@@ -183,8 +186,10 @@ public final class StructureManager {
             case 4 -> buildGraveyard(w, x, gy, z);
             case 5 -> buildFinalWell(w, x, gy, z);
             case 6 -> buildCorruptDoor(w, x, gy, z);
+            case 8 -> buildSchool(w, x, gy, z);
             default -> buildTree(w, x, gy, z);
         }
+        if (RITUAL_R[type] > 0) buildRitualAltar(w, x, gy, z + RITUAL_R[type]);
         PLACED.add(new Placed(x, z, type, HorrorUtil.dimIndex(w)));
         save(w.getServer());
         return true;
@@ -224,6 +229,96 @@ public final class StructureManager {
             int dx = p.x() - pos.getX();
             int dz = p.z() - pos.getZ();
             if (dx * dx + dz * dz <= 16) return true;
+        }
+        return false;
+    }
+
+    /** Distancia (en filas z) del altar de ritual al centro de cada estructura. 0 = no tiene altar de ritual. */
+    private static final int[] RITUAL_R = {6, 7, 7, 8, 9, 0, 0, 0, 8};
+
+    /** Tipo de estructura (0-4, 8) si 'pos' es el altar de ritual (magnetita) de una de ellas; -1 si no. */
+    public static int ritualAltarType(ServerWorld w, BlockPos pos) {
+        if (!w.getBlockState(pos).isOf(Blocks.LODESTONE)) return -1;
+        int dim = HorrorUtil.dimIndex(w);
+        for (Placed p : PLACED) {
+            if (p.type() >= RITUAL_R.length || RITUAL_R[p.type()] == 0 || p.dim() != dim) continue;
+            if (p.x() == pos.getX() && p.z() + RITUAL_R[p.type()] == pos.getZ()) return p.type();
+        }
+        return -1;
+    }
+
+    // ---- monstruos vencidos (se guardan como registros 100+indice) ----
+    public static boolean isDefeated(int idx) {
+        for (Placed p : PLACED) if (p.type() == 100 + idx) return true;
+        return false;
+    }
+
+    public static void markDefeated(MinecraftServer server, int idx) {
+        if (isDefeated(idx)) return;
+        PLACED.add(new Placed(0, 0, 100 + idx, 0));
+        save(server);
+    }
+
+    public static int[] finalCoords(int dim) {
+        for (Placed p : PLACED) if (p.type() == 5 && p.dim() == dim) return new int[] {p.x(), p.z(), p.dim()};
+        return null;
+    }
+
+    /** Construye el pozo en unas coordenadas concretas (para la version de ceniza del pozo de la Pradera). */
+    public static boolean placeFinalAt(ServerWorld w, int x, int z) {
+        int dim = HorrorUtil.dimIndex(w);
+        if (hasType(5, dim)) return true;
+        for (int cx = (x - 9) >> 4; cx <= (x + 9) >> 4; cx++) {
+            for (int cz = (z - 9) >> 4; cz <= (z + 9) >> 4; cz++) w.getChunk(cx, cz);
+        }
+        int gy = HorrorUtil.isModDim(w) ? DimTerrain.STAND_Y : w.getTopY(Heightmap.Type.MOTION_BLOCKING_NO_LEAVES, x, z);
+        buildFinalWell(w, x, gy, z);
+        PLACED.add(new Placed(x, z, 5, dim));
+        save(w.getServer());
+        return true;
+    }
+
+    private static Placed nearest(int dim, int type, ServerPlayerEntity p) {
+        Placed best = null;
+        double bd = Double.MAX_VALUE;
+        for (Placed s : PLACED) {
+            if (s.type() != type || s.dim() != dim) continue;
+            double dx = s.x() - p.getX();
+            double dz = s.z() - p.getZ();
+            double d = dx * dx + dz * dz;
+            if (d < bd) {
+                bd = d;
+                best = s;
+            }
+        }
+        return best;
+    }
+
+    /** "Lo siento hacia el este, a unos 90 bloques." Si no hay ninguna de ese tipo cerca, hace aparecer una. */
+    public static String directionHint(ServerWorld w, ServerPlayerEntity p, int type) {
+        int dim = HorrorUtil.dimIndex(w);
+        Placed best = nearest(dim, type, p);
+        if (best == null) {
+            tryPlaceNear(w, p, type);
+            best = nearest(dim, type, p);
+        }
+        if (best == null) return "No lo siento todavía... sigue explorando.";
+        double dx = best.x() - p.getX();
+        double dz = best.z() - p.getZ();
+        String[] dirs = {"este", "sureste", "sur", "suroeste", "oeste", "noroeste", "norte", "noreste"};
+        int k = (((int) Math.round(Math.atan2(dz, dx) / (Math.PI / 4))) % 8 + 8) % 8;
+        int dist = (int) (Math.round(Math.sqrt(dx * dx + dz * dz) / 10.0) * 10);
+        return "Lo siento hacia el " + dirs[k] + ", a unos " + dist + " bloques.";
+    }
+
+    /** ¿Hay alguna estructura del mod a menos de 'r' bloques de (x,z)? (el terreno se deja plano a su alrededor) */
+    public static boolean nearAny(ServerWorld w, int x, int z, int r) {
+        int dim = HorrorUtil.dimIndex(w);
+        for (Placed p : PLACED) {
+            if (p.type() >= 100 || p.dim() != dim) continue;
+            int dx = p.x() - x;
+            int dz = p.z() - z;
+            if (dx * dx + dz * dz <= r * r) return true;
         }
         return false;
     }
@@ -333,7 +428,8 @@ public final class StructureManager {
             c.setStack(0, new ItemStack(ModItems.NOTA_ROTA, notes));
             c.setStack(1, new ItemStack(Items.TORCH, 6));
             c.setStack(2, new ItemStack(Items.BREAD, 3));
-            if (w.getRandom().nextBoolean()) c.setStack(3, new ItemStack(ModItems.VELA, 1));
+            c.setStack(3, new ItemStack(ModItems.SAL, 1 + w.getRandom().nextInt(2)));
+            if (w.getRandom().nextBoolean()) c.setStack(4, new ItemStack(ModItems.VELA, 1));
         }
     }
 
@@ -665,6 +761,7 @@ public final class StructureManager {
             c.setStack(2, new ItemStack(ModItems.VELA, 2));
             c.setStack(3, new ItemStack(Items.IRON_SWORD, 1));
             c.setStack(4, new ItemStack(Items.COOKED_BEEF, 8));
+            c.setStack(5, new ItemStack(ModItems.SAL, 2));
         }
         put(w, cx + 1, gy, cz - 2, Blocks.BOOKSHELF.getDefaultState());
         put(w, cx + 1, gy + 1, cz - 2, Blocks.BOOKSHELF.getDefaultState());
@@ -676,6 +773,60 @@ public final class StructureManager {
             for (int i = 0; i < 10; i++) {
                 put(w, cx - 2 + r.nextInt(5), gy + 3, cz - 2 + r.nextInt(5), Blocks.COBWEB.getDefaultState());
             }
+        }
+    }
+
+    // ------------------------------------------------------------------ ALTAR DE RITUAL (magnetita sobre placa de ladrillo negro)
+    private static void buildRitualAltar(ServerWorld w, int ax, int gy, int az) {
+        prepare(w, ax, gy, az, 3);
+        fill(w, ax - 1, gy - 1, az - 1, ax + 1, gy - 1, az + 1, Blocks.POLISHED_BLACKSTONE_BRICKS.getDefaultState());
+        put(w, ax, gy, az, Blocks.LODESTONE.getDefaultState());
+        for (int[] c : new int[][] {{-2, -2}, {2, -2}, {-2, 2}, {2, 2}}) {
+            put(w, ax + c[0], gy, az + c[1], Blocks.CRYING_OBSIDIAN.getDefaultState());
+            put(w, ax + c[0], gy + 1, az + c[1], Blocks.CANDLE.getDefaultState());
+        }
+    }
+
+    // ------------------------------------------------------------------ ESCUELA DE SAN MUDO
+    private static void buildSchool(ServerWorld w, int cx, int gy, int cz) {
+        Random r = w.getRandom();
+        BlockState brick = Blocks.BRICKS.getDefaultState();
+        BlockState base = Blocks.STONE_BRICKS.getDefaultState();
+        BlockState air = Blocks.AIR.getDefaultState();
+        prepare(w, cx, gy, cz, 6);
+        fill(w, cx - 4, gy - 1, cz - 3, cx + 4, gy - 1, cz + 3, Blocks.SPRUCE_PLANKS.getDefaultState());
+        for (int dx = -4; dx <= 4; dx++) {
+            for (int dz = -3; dz <= 3; dz++) {
+                if (Math.abs(dx) != 4 && Math.abs(dz) != 3) continue;
+                boolean corner = Math.abs(dx) == 4 && Math.abs(dz) == 3;
+                for (int y = 0; y <= 3; y++) {
+                    BlockState s = (corner || y == 0) ? base : brick;
+                    if (!corner && y >= 2 && r.nextInt(14) == 0) s = air;
+                    put(w, cx + dx, gy + y, cz + dz, s);
+                }
+            }
+        }
+        fill(w, cx - 4, gy + 4, cz - 3, cx + 4, gy + 4, cz + 3, Blocks.SPRUCE_PLANKS.getDefaultState());
+        putQuiet(w, cx, gy, cz + 3, Blocks.SPRUCE_DOOR.getDefaultState()
+                .with(DoorBlock.FACING, Direction.SOUTH).with(DoorBlock.HALF, DoubleBlockHalf.LOWER));
+        putQuiet(w, cx, gy + 1, cz + 3, Blocks.SPRUCE_DOOR.getDefaultState()
+                .with(DoorBlock.FACING, Direction.SOUTH).with(DoorBlock.HALF, DoubleBlockHalf.UPPER));
+        for (int x : new int[] {cx - 2, cx + 2}) {
+            for (int y = 1; y <= 2; y++) put(w, x, gy + y, cz - 3, r.nextInt(3) < 2 ? Blocks.GLASS_PANE.getDefaultState() : air);
+        }
+        for (int sx : new int[] {-4, 4}) {
+            for (int dz : new int[] {-1, 1}) put(w, cx + sx, gy + 1, cz + dz, r.nextInt(3) < 2 ? Blocks.GLASS_PANE.getDefaultState() : air);
+        }
+        // pupitres, pizarra y estantes
+        for (int x : new int[] {cx - 2, cx, cx + 2}) {
+            for (int z : new int[] {cz, cz + 2}) put(w, x, gy, z, Blocks.SPRUCE_SLAB.getDefaultState());
+        }
+        fill(w, cx - 1, gy + 1, cz - 2, cx + 1, gy + 2, cz - 2, Blocks.BLACKSTONE.getDefaultState());
+        put(w, cx - 3, gy, cz - 2, Blocks.BOOKSHELF.getDefaultState());
+        put(w, cx - 3, gy + 1, cz - 2, Blocks.BOOKSHELF.getDefaultState());
+        chest(w, cx + 3, gy, cz - 2, Direction.SOUTH, 1);
+        for (int i = 0; i < 8; i++) {
+            put(w, cx - 3 + r.nextInt(7), gy + 3, cz - 2 + r.nextInt(5), Blocks.COBWEB.getDefaultState());
         }
     }
 }

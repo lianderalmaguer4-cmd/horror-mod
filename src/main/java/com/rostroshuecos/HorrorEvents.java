@@ -38,7 +38,7 @@ public final class HorrorEvents {
 
     /** La mitad de las veces suena el ambiente propio de un monstruo; si no, un sonido vanilla inquietante. */
     private static SoundEvent pick(net.minecraft.util.math.random.Random r) {
-        if (r.nextBoolean()) return ModSounds.AMBIENT[r.nextInt(ModSounds.AMBIENT.length)];
+        if (r.nextBoolean()) return ModSounds.AMBIENT[r.nextInt(ModSounds.AMBIENT.length - 1)];
         return CREEPS[r.nextInt(CREEPS.length)];
     }
 

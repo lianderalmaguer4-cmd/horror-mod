@@ -24,5 +24,6 @@ public class RostrosHuecos implements ModInitializer {
         StructureManager.register();
         FinalEvent.register();
         DimTerrain.register();
+        Rituals.register();
     }
 }

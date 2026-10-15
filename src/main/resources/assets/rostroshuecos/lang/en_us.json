@@ -21,5 +21,7 @@
   "item.rostroshuecos.fragmento_sudario": "Shroud Fragment",
   "item.rostroshuecos.fragmento_hueco": "Hollow Fragment",
   "item.rostroshuecos.fragmento_mandibula": "Fallen Jaw Fragment",
-  "item.rostroshuecos.fragmento_doble_boca": "Double Mouth Fragment"
+  "item.rostroshuecos.fragmento_doble_boca": "Double Mouth Fragment",
+  "item.rostroshuecos.sal": "Salt of San Mudo",
+  "entity.rostroshuecos.san_mudo": "San Mudo"
 }

@@ -21,5 +21,7 @@
   "item.rostroshuecos.fragmento_sudario": "Fragmento de El Sudario",
   "item.rostroshuecos.fragmento_hueco": "Fragmento de El Hueco",
   "item.rostroshuecos.fragmento_mandibula": "Fragmento de Mandíbula Caída",
-  "item.rostroshuecos.fragmento_doble_boca": "Fragmento de Doble Boca"
+  "item.rostroshuecos.fragmento_doble_boca": "Fragmento de Doble Boca",
+  "item.rostroshuecos.sal": "Sal de San Mudo",
+  "entity.rostroshuecos.san_mudo": "San Mudo"
 }

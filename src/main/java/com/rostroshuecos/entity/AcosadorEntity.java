@@ -3,6 +3,7 @@ package com.rostroshuecos.entity;
 import com.rostroshuecos.FinalEvent;
 import com.rostroshuecos.HorrorUtil;
 import com.rostroshuecos.Jumpscare;
+import com.rostroshuecos.Quest;
 import com.rostroshuecos.ModSounds;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -97,12 +98,29 @@ public abstract class AcosadorEntity extends HostileEntity {
         }
         if (HorrorUtil.isSpy(this)) return;
 
+        boolean chained = HorrorUtil.isChained(this);   // invocado por un ritual
+        // un monstruo vencido con su ritual no vuelve a aparecer jamas
+        if (!chained && HorrorUtil.isDefeatedEntity(this)) {
+            this.discard();
+            return;
+        }
+        // fase de acecho: hasta el despertar solo te observan (los maneja StalkerDirector como "espias")
+        if (!chained && !FinalEvent.active) {
+            PlayerEntity np = sw.getClosestPlayer(this, 80.0);
+            if (np instanceof ServerPlayerEntity sp0 && !Quest.aggressive(sp0)) {
+                this.setTarget(null);
+                this.addCommandTag(HorrorUtil.TAG_ESPIA);
+                this.setAiDisabled(true);
+                return;
+            }
+        }
+
         if (scareCooldown > 0) scareCooldown--;
 
         // la Vela de Sal y el Sello los ahuyentan: pierden tu rastro a menos de 8 bloques
         if (this.age % 5 == 0) {
             PlayerEntity near = sw.getClosestPlayer(this, 8.0);
-            if (near != null && HorrorUtil.holdsRepeller(near) && !FinalEvent.active) {
+            if (near != null && HorrorUtil.holdsRepeller(near) && !FinalEvent.active && !chained) {
                 this.setTarget(null);
             }
         }
@@ -110,7 +128,7 @@ public abstract class AcosadorEntity extends HostileEntity {
         LivingEntity target = this.getTarget();
 
         // sigilo: si te agachas y estas lejos, te pierden
-        if (!FinalEvent.active && target instanceof PlayerEntity pl && pl.isSneaking()
+        if (!FinalEvent.active && !chained && target instanceof PlayerEntity pl && pl.isSneaking()
                 && this.squaredDistanceTo(pl) > 100.0 && !this.canSee(pl)) {
             this.setTarget(null);
             target = null;
@@ -119,12 +137,11 @@ public abstract class AcosadorEntity extends HostileEntity {
         // la persecucion dura un rato; si sobrevives, deja caer su fragmento y desaparece
         if (target != null) {
             idleTicks = 0;
-            if (++chaseTicks > chaseLimit() * (HorrorUtil.isAsh(sw) ? 2 : 1) && !FinalEvent.active) {
-                if (target instanceof ServerPlayerEntity) HorrorUtil.dropFragment(this, mobIndex());
+            if (++chaseTicks > chaseLimit() * (HorrorUtil.isAsh(sw) ? 2 : 1) && !FinalEvent.active && !chained) {
                 HorrorUtil.poof(this);
                 return;
             }
-        } else if (++idleTicks > 3600 && !FinalEvent.active) {
+        } else if (++idleTicks > 3600 && !FinalEvent.active && !chained) {
             HorrorUtil.poof(this);
             return;
         }
@@ -142,7 +159,7 @@ public abstract class AcosadorEntity extends HostileEntity {
 
         // la habilidad propia no funciona si te protege la Vela o el Sello
         PlayerEntity close = sw.getClosestPlayer(this, 8.0);
-        if (close != null && HorrorUtil.holdsRepeller(close) && !FinalEvent.active) return;
+        if (close != null && HorrorUtil.holdsRepeller(close) && !FinalEvent.active && !chained) return;
         abilityTick(sw);
     }
 

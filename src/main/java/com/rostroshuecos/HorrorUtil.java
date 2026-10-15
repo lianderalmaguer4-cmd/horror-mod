@@ -23,6 +23,8 @@ public final class HorrorUtil {
     public static final String TAG_PUERTA = "visita_puerta";
     public static final String TAG_VENTANA = "visita_ventana";
     public static final String TAG_BAJO_CAMA = "visita_cama";
+    public static final String TAG_ENCADENADO = "encadenado";
+    public static final String TAG_ACECHO = "acecho";
 
     /** Mismo calculo que el Enderman: true si el jugador mira directamente a la entidad. */
     public static boolean isLookingAt(PlayerEntity p, Entity e) {
@@ -39,7 +41,8 @@ public final class HorrorUtil {
                 || e.getCommandTags().contains(TAG_ESPIA_CAMA)
                 || e.getCommandTags().contains(TAG_PUERTA)
                 || e.getCommandTags().contains(TAG_VENTANA)
-                || e.getCommandTags().contains(TAG_BAJO_CAMA);
+                || e.getCommandTags().contains(TAG_BAJO_CAMA)
+                || e.getCommandTags().contains(TAG_ACECHO);
     }
 
     /** Los 5 monstruos agresivos. La Sombra Hueca es neutral (no ataca a menos que la mires). */
@@ -112,5 +115,22 @@ public final class HorrorUtil {
     public static int dimIndex(ServerWorld w) {
         if (isAsh(w)) return 2;
         return isModDim(w) ? 1 : 0;
+    }
+
+    /** Monstruo invocado por un ritual (atado a su altar). */
+    public static boolean isChained(Entity e) {
+        return e.getCommandTags().contains(TAG_ENCADENADO);
+    }
+
+    /** ¿Este tipo de monstruo ya fue vencido con su ritual? (no vuelve a aparecer) */
+    public static boolean isDefeatedType(EntityType<?> type) {
+        for (int i = 0; i < 6; i++) {
+            if (ModEntities.byIndex(i) == type && StructureManager.isDefeated(i)) return true;
+        }
+        return false;
+    }
+
+    public static boolean isDefeatedEntity(Entity e) {
+        return e instanceof AcosadorEntity a && a.mobIndex() < 6 && StructureManager.isDefeated(a.mobIndex());
     }
 }

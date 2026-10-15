@@ -83,5 +83,15 @@
     "sounds": [
       "rostroshuecos:final_end"
     ]
+  },
+  "scare.san_mudo": {
+    "sounds": [
+      "rostroshuecos:scare_san_mudo"
+    ]
+  },
+  "ambient.san_mudo": {
+    "sounds": [
+      "rostroshuecos:ambient_san_mudo"
+    ]
   }
 }

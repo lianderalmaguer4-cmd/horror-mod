@@ -20,6 +20,7 @@ public final class ModItems {
 
     public static final Item NOTA_ROTA = item("nota_rota", NotaRotaItem::new, new Item.Settings().maxCount(16));
     public static final Item DIARIO = item("diario", DiarioItem::new, new Item.Settings().maxCount(1));
+    public static final Item SAL = item("sal", Item::new, new Item.Settings().maxCount(64));
     public static final Item VELA = item("vela", Item::new, new Item.Settings().maxDamage(60));
     public static final Item SELLO = item("sello", Item::new, new Item.Settings().maxCount(1).rarity(Rarity.EPIC));
     public static final Item[] FRAGMENTOS = new Item[6];
@@ -52,6 +53,7 @@ public final class ModItems {
                 .entries((ctx, entries) -> {
                     entries.add(DIARIO);
                     entries.add(NOTA_ROTA);
+                    entries.add(SAL);
                     entries.add(VELA);
                     entries.add(SELLO);
                     for (Item fr : FRAGMENTOS) entries.add(fr);
